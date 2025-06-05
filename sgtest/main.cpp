@@ -1,10 +1,20 @@
 #include <gtest/gtest.h>
 #include <scenegraph/ForwardList.h>
+#include <scenegraph/Hierarchy.h>
+#include <scenegraph/PoolAllocator.h>
 #include <string>
 
 class node : public ForwardListNode<> {
 public:
 	explicit node(std::string_view name) : name{name} {}
+
+public:
+	std::string name;
+};
+
+class object : public Hierarchy<object> {
+public:
+	explicit object(std::string_view name) : name{name} {}
 
 public:
 	std::string name;
@@ -246,3 +256,54 @@ TEST(CircularList, Rotate) { TestRotate<circular_list>(); }
 TEST(CircularList, Erase) { TestErase<circular_list>(); }
 TEST(CircularList, Erase2) { TestErase2<circular_list>(); }
 TEST(CircularList, Erase3) { TestErase3<circular_list>(); }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+TEST(Hierarchy, Create) {
+	object root{"root"};
+	
+	ASSERT_EQ(root.GetParentNode(), nullptr);
+	ASSERT_EQ(root.GetFirstChildNode(), nullptr);
+	ASSERT_EQ(root.GetPrevSiblingNode(), nullptr);
+	ASSERT_EQ(root.GetNextSiblingNode(), nullptr);
+}
+
+TEST(PoolAllocator, Allocate) {
+	PoolAllocator<int, 2> allocator;
+	
+	auto p = allocator.Allocate();
+	void* addr1 = p;
+	void* addr2;
+	void* addr3;
+	
+	{
+		auto obj = std::construct_at(allocator.Allocate());
+		addr2 = obj;
+		EXPECT_NE(addr1, addr2);
+		std::destroy_at(obj);
+		allocator.Deallocate(obj);
+	}
+	{
+		auto obj = std::construct_at(allocator.Allocate());
+		addr3 = obj;
+		EXPECT_NE(addr1, addr3);
+		std::destroy_at(obj);
+		allocator.Deallocate(obj);
+	}
+	
+	EXPECT_EQ(addr2, addr3);
+	
+	allocator.Deallocate(p);
+	
+	int* p1 = allocator.Allocate();
+	int* p2 = allocator.Allocate();
+	int* p3 = allocator.Allocate();
+	
+	EXPECT_EQ(addr1, p1);
+	EXPECT_EQ(addr2, p2);
+	EXPECT_NE(addr3, p3);
+	
+	allocator.Deallocate(p1);
+	allocator.Deallocate(p2);
+	allocator.Deallocate(p3);
+}
