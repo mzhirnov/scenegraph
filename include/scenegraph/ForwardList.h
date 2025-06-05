@@ -181,7 +181,13 @@ private:
 
 	constexpr explicit iterator_impl(NodeType** current) noexcept : _current{current} {}
 
-	constexpr iterator_impl& EraseAndMoveForward() noexcept { if (_current) { *_current = std::exchange((*_current)->_next, {}); } return *this; }
+	constexpr iterator_impl& EraseAndMoveForward() noexcept {
+		if (_current) {
+			*_current = std::exchange((*_current)->_next, {});
+		}
+		return *this;
+	}
+	
 	constexpr bool Terminal() const noexcept { return !_current || !*_current; }
 
 private:
@@ -231,9 +237,9 @@ public:
 	constexpr const_iterator before_begin() const noexcept { return const_iterator{&_last}; }
 	constexpr const_iterator cbefore_begin() const noexcept { return const_iterator{&_last}; }
 
-	constexpr iterator begin() noexcept { return iterator{HeadOrNullptr()}; }
-	constexpr const_iterator begin() const noexcept { return const_iterator{HeadOrNullptr()}; }
-	constexpr const_iterator cbegin() const noexcept { return const_iterator{HeadOrNullptr()}; }
+	constexpr iterator begin() noexcept { return iterator{HeadOrNull()}; }
+	constexpr const_iterator begin() const noexcept { return const_iterator{HeadOrNull()}; }
+	constexpr const_iterator cbegin() const noexcept { return const_iterator{HeadOrNull()}; }
 
 	constexpr iterator end() noexcept { return iterator{}; }
 	constexpr const_iterator end() const noexcept { return const_iterator{}; }
@@ -248,29 +254,8 @@ public:
 	constexpr T& Back() noexcept { return static_cast<T&>(*_last); }
 	constexpr const T& Back() const noexcept { return static_cast<const T&>(*_last); }
 
-	constexpr void PushFront(T& node) noexcept {
-		if (_last) {
-			node._next = _last->_next;
-			_last->_next = &node;
-		}
-		else {
-			node._next = &node;
-			_last = &node;
-		}
-	}
-
-	constexpr void PushBack(T& node) noexcept {
-		if (_last) {
-			node._next = _last->_next;
-			_last->_next = &node;
-			// Rotate
-			_last = &node;
-		}
-		else {
-			node._next = &node;
-			_last = &node;
-		}
-	}
+	constexpr void PushFront(T& node) noexcept { InsertAfter(before_begin(), node); }
+	constexpr void PushBack(T& node) noexcept { InsertAfter(before_begin(), node); _last = &node; }
 
 	constexpr iterator InsertAfter(iterator pos, T& node) noexcept {
 		if (auto after = pos.operator->()) {
@@ -327,7 +312,7 @@ public:
 	constexpr friend void swap(CircularForwardList<T, Tag>& lhs, CircularForwardList<T, Tag>& rhs) noexcept { lhs.Swap(rhs); }
 
 private:
-	constexpr NodeType** HeadOrNullptr() noexcept {
+	constexpr NodeType** HeadOrNull() noexcept {
 		return _last ? &_last->_next : nullptr;
 	}
 
@@ -408,16 +393,16 @@ private:
 namespace std {
 	template <typename Tag>
 	constexpr void swap(ForwardListNode<Tag>& lhs, ForwardListNode<Tag>& rhs) noexcept {
-		lhs.swap(rhs);
+		lhs.Swap(rhs);
 	}
 
 	template <typename T, typename Tag>
 	constexpr void swap(ForwardList<T, Tag>& lhs, ForwardList<T, Tag>& rhs) noexcept {
-		lhs.swap(rhs);
+		lhs.Swap(rhs);
 	}
 
 	template <typename T, typename Tag>
 	constexpr void swap(CircularForwardList<T, Tag>& lhs, CircularForwardList<T, Tag>& rhs) noexcept {
-		lhs.swap(rhs);
+		lhs.Swap(rhs);
 	}
 }
