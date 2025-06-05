@@ -19,34 +19,75 @@ public:
 		{ _dispatchMemFn = static_cast<DispatchMemFn>(mf); }
 	
 	void SendMessage(Message message, SceneObject* sceneObject) noexcept
-		{ _dispatchMemFn ? std::invoke(_dispatchMemFn, this, message, sceneObject) : static_cast<void>(0); }
+		{ std::invoke(_dispatchMemFn, this, message, sceneObject); }
 
-	bool Valid() const noexcept { return !!_dispatchMemFn; }
-	void Invalidate() noexcept { _dispatchMemFn = {}; }
+	void Remove() noexcept { _removed = true; }
+	bool Removed() const noexcept { return _removed; }
+	
+	void DefaultDispatchMessage(Component::Message, SceneObject*) noexcept {}
 
 private:
 	using DispatchMemFn = void (Component::*)(Message, SceneObject*) noexcept;
 
-	DispatchMemFn _dispatchMemFn{};
+	DispatchMemFn _dispatchMemFn = &Component::DefaultDispatchMessage;
+	
+	bool _removed = false;
 };
 
 enum class Component::Message {
+	Added,
+	Removed,
 	Apply
 };
 
 ///
 ///
 ///
-class ComponentList : public CircularForwardList<Component> {
+template <typename T>
+class ComponentImpl : public Component {
 public:
+	ComponentImpl() noexcept { DispatchMessagesTo(&ComponentImpl::DispatchMessage); }
+
+private:
 	void DispatchMessage(Component::Message message, SceneObject* sceneObject) noexcept {
+		switch (message) {
+		case Component::Message::Added:
+			Derived()->Added(sceneObject);
+			break;
+		case Component::Message::Removed:
+			Derived()->Removed(sceneObject);
+			break;
+		case Component::Message::Apply:
+			Derived()->Apply(sceneObject);
+			break;
+		}
+	}
+
+	T* Derived() noexcept { return static_cast<T*>(this); }
+	
+	void Added(SceneObject*) noexcept {}
+	void Removed(SceneObject*) noexcept {}
+	void Apply(SceneObject*) noexcept {}
+};
+
+///
+///
+///
+class ComponentList : private CircularForwardList<Component> {
+public:
+	void Add(Component& c) {
+		PushBack(c);
+	}
+	
+	void BroadcastMessage(Component::Message message, SceneObject* sceneObject) noexcept {
 		for (auto it = begin(), e = end(); it != e; /**/) {
-			if ((*it).Valid()) {
-				(*it).SendMessage(message, sceneObject);
-				++it;
+			if (auto& component = *it; component.Removed()) {
+				component.SendMessage(Component::Message::Removed, sceneObject);
+				it = Erase(it);
 			}
 			else {
-				it = Erase(it);
+				component.SendMessage(message, sceneObject);
+				++it;
 			}
 		}
 	}
@@ -62,35 +103,17 @@ public:
 	SceneObject(const SceneObject&) = delete;
 	SceneObject& operator=(const SceneObject&) = delete;
 
-	void AddComponent(Component& c) noexcept { _components.PushBack(c); }
+	void AddComponent(Component& c) noexcept {
+		_components.Add(c);
+		c.SendMessage(Component::Message::Added, this);
+	}
 
 	// FindComponent
 	
-	void Update() noexcept { _components.DispatchMessage(Component::Message::Apply, this); }
+	void Update() noexcept { _components.BroadcastMessage(Component::Message::Apply, this); }
 
 private:
 	ComponentList _components;
 	//BehaviorList _behaviors;
 	//AttributeList _attributes;
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-class ComponentImpl : public Component {
-public:
-	ComponentImpl() noexcept { DispatchMessagesTo(&ComponentImpl::DispatchMessageImpl); }
-
-private:
-	void DispatchMessageImpl(Component::Message message, SceneObject* sceneObject) noexcept {
-		switch (message) {
-		case Component::Message::Apply:
-			Derived()->Apply(sceneObject);
-			break;
-		}
-	}
-
-	T* Derived() noexcept { return static_cast<T*>(this); }
-
-	void Apply(SceneObject*) noexcept {}
 };
