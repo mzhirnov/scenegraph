@@ -73,13 +73,13 @@ private:
 			Format();
 		}
 		
-		Page(const Page&) = delete;
-		Page& operator=(const Page&) = delete;
+		constexpr Page(const Page&) = delete;
+		constexpr Page& operator=(const Page&) = delete;
 		
-		Page(Page&&) = delete;
-		Page& operator=(Page&&) = delete;
+		constexpr Page(Page&&) = delete;
+		constexpr Page& operator=(Page&&) = delete;
 		
-		~Page() {
+		constexpr ~Page() {
 			assert(_size == 0 && "Destroying items storage with external pointers to it");
 			
 			// Destroy list inplace in the loop instead of auto recursion
