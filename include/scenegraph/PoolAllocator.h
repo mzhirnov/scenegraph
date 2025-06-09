@@ -4,7 +4,7 @@
 #include <cstddef>
 
 ///
-/// Paged free list pool allocator
+/// Free list paged pool allocator
 ///
 template <typename T, size_t PageSize>
 class PoolAllocator {
@@ -13,6 +13,7 @@ public:
 	
 	constexpr PoolAllocator() = default;
 	
+	[[nodiscard]]
 	constexpr T* Allocate() noexcept {
 		// Try allocate from occupied pages, from newer to older
 		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
@@ -88,6 +89,7 @@ private:
 			}
 		}
 		
+		[[nodiscard]]
 		constexpr T* TryAllocate() noexcept {
 			// The page is full
 			if (_freeListHead >= PageSize) {
@@ -127,10 +129,12 @@ private:
 			return true;
 		}
 		
+		[[nodiscard]]
 		constexpr bool IsOwnPointer(const void* p) const noexcept {
 			return p >= _items.front().bytes.data() && p <= _items.back().bytes.data();
 		}
 		
+		[[nodiscard]]
 		constexpr bool Empty() const noexcept { return _size == 0; }
 		
 		constexpr void Format() noexcept {
