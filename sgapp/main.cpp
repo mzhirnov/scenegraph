@@ -1,5 +1,7 @@
 #include <scenegraph/SceneObject.h>
 #include <scenegraph/PoolAllocator.h>
+#include <scenegraph/StaticImpl.h>
+
 #include <iostream>
 #include <memory>
 #include <cstdio>
@@ -85,12 +87,30 @@ private:
 	}
 };
 
-struct AutoObject {
-	AutoObject() { puts(".ctor"); }
-	~AutoObject() { puts(".dtor"); }
+class AutoObject {
+public:
+	AutoObject();
+	~AutoObject();
 	
-	int i = 0;
+	int Value() const;
+	
+private:
+	struct Impl;
+	StaticImpl<Impl, 4, alignof(int)> _impl;
 };
+
+struct AutoObject::Impl {
+	int i = 42;
+	
+	Impl() = default;
+	explicit Impl(int n) noexcept : i(n) {}
+	~Impl() = default;
+};
+
+AutoObject::AutoObject() : _impl(43) { puts(".ctor"); }
+AutoObject::~AutoObject() { puts(".dtor"); }
+
+int AutoObject::Value() const { return _impl->i; }
 
 int main() {
 	SceneObject sceneObject;
@@ -114,7 +134,7 @@ int main() {
 	
 	{
 		auto obj = std::construct_at(allocator.Allocate());
-		std::cout << obj << '\n';
+		std::cout << obj << " align: " << alignof(AutoObject) << " size: " << sizeof(AutoObject) << " value: " << obj->Value() << '\n';
 		std::destroy_at(obj);
 		allocator.Deallocate(obj);
 	}
