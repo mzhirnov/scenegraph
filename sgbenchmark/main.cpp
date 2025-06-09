@@ -4,6 +4,7 @@
 #include <scenegraph/PoolAllocator.h>
 
 #include <vector>
+//#include <experimental/memory_resource>
 
 class Node : public ForwardListNode<> {
 public:
@@ -115,54 +116,56 @@ static void BM_PoolAllocator(benchmark::State& state) {
 
 BENCHMARK(BM_PoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
-static void BM_MallocFreeAllocator(benchmark::State& state) {
+static void BM_StdAllocator(benchmark::State& state) {
 	const auto size = state.range();
 	std::vector<Node*> nodes(size);
+	std::allocator<Node> allocator;
 	
 	for (auto _ : state) {
 		for (auto& node : nodes) {
-			node = (Node*)malloc(sizeof(Node));
+			node = allocator.allocate(1);
 		}
 		
 		for (auto& node : nodes) {
-			free(node);
+			allocator.deallocate(node, 1);
 		}
 		
 		for (auto& node : nodes) {
-			node = (Node*)malloc(sizeof(Node));
+			node = allocator.allocate(1);
 		}
 		
 		for (auto& node : nodes) {
-			free(node);
+			allocator.deallocate(node, 1);
 		}
 	}
 }
 
-BENCHMARK(BM_MallocFreeAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
+BENCHMARK(BM_StdAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
-static void BM_NewDeleteAllocator(benchmark::State& state) {
-	const auto size = state.range();
-	std::vector<Node*> nodes(size);
-	
-	for (auto _ : state) {
-		for (auto& node : nodes) {
-			node = new Node;
-		}
-		
-		for (auto& node : nodes) {
-			delete node;
-		}
-		
-		for (auto& node : nodes) {
-			node = new Node;
-		}
-		
-		for (auto& node : nodes) {
-			delete node;
-		}
-	}
-}
-
-BENCHMARK(BM_NewDeleteAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
+//static void BM_StdPoolAllocator(benchmark::State& state) {
+//	const auto size = state.range();
+//	std::vector<Node*> nodes(size);
+//	std::experimental::pmr::unsynchronized_pool_resource allocator;
+//
+//	for (auto _ : state) {
+//		for (auto& node : nodes) {
+//			node = (Node*)allocator.allocate(sizeof(Node));
+//		}
+//
+//		for (auto& node : nodes) {
+//			allocator.deallocate(node);
+//		}
+//
+//		for (auto& node : nodes) {
+//			node = (Node*)allocator.allocate(sizeof(Node));
+//		}
+//
+//		for (auto& node : nodes) {
+//			allocator.deallocate(node);
+//		}
+//	}
+//}
+//
+//BENCHMARK(BM_StdPoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
 BENCHMARK_MAIN();
