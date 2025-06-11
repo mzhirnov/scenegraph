@@ -9,42 +9,57 @@
 template <typename T, size_t PageSize>
 class PoolAllocator {
 public:
-	using ValueType = T;
-	
 	constexpr PoolAllocator() = default;
 	
 	[[nodiscard]]
 	constexpr T* Allocate() noexcept {
 		// Try allocate from occupied pages, from newer to older
-		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
+		for (auto page = &_firstPage; page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate()) {
 				return p;
 			}
 		}
 		
-		// No free space. Take free page or create new one
+		// No free space. Take last free page or create new one
 		auto newPage = _firstFreePage ?
 			std::exchange(_firstFreePage, std::move(_firstFreePage->nextPage)) :
 			std::make_unique<Page>();
 		
-		// Insert new empty page in the top of the list
-		newPage->nextPage = std::move(_firstPage);
-		_firstPage = std::move(newPage);
+		// Insert new page to the end of the list
+		assert(_firstPage.prevPage->nextPage == nullptr);
+		newPage->prevPage = _firstPage.prevPage;
+		_firstPage.prevPage->nextPage = std::move(newPage);
+		_firstPage.prevPage = _firstPage.prevPage->nextPage.get();
 		
-		// Allocation from empty page must be successful
-		auto p = _firstPage->TryAllocate();
+		// Allocation from empty page must succeed
+		auto p = _firstPage.prevPage->TryAllocate();
 		assert(p != nullptr);
 		return p;
 	}
 	
 	constexpr void Deallocate(T* p) noexcept {
-		// Try deallocate from occupied pages, from newer to older
-		for (auto page = &_firstPage; *page; page = &(*page)->nextPage) {
-			if ((*page)->TryDeallocate(p)) {
-				// If deallocated and the page got empty, move the page to the free list
-				if ((*page)->Empty()) {
-					auto emptyPage = std::exchange(*page, std::move((*page)->nextPage));
-					emptyPage->Format();					
+		if (_firstPage.TryDeallocate(p)) {
+			return;
+		}
+		
+		// Try deallocate from extra pages, older down to newer
+		for (auto page = _firstPage.nextPage.get(); page; page = page->nextPage.get()) {
+			if (page->TryDeallocate(p)) {
+				// If deallocated and the page got empty, move the page to free list
+				if (page->Empty()) {
+					if (page->nextPage) {
+						page->nextPage->prevPage = page->prevPage;
+					}
+					else {
+						// If removing the tail, update last page
+						_firstPage.prevPage = page->prevPage;
+					}
+					
+					// Remove from busy list
+					auto emptyPage = std::move(page->prevPage->nextPage);
+					page->prevPage->nextPage = std::move(page->nextPage);
+					
+					// Add to free list
 					emptyPage->nextPage = std::move(_firstFreePage);
 					_firstFreePage = std::move(emptyPage);
 				}
@@ -63,15 +78,15 @@ private:
 		static_assert(std::numeric_limits<IndexType>::max() >= PageSize);
 		static_assert(sizeof(IndexType) <= sizeof(T));
 		
-		struct ItemStorage {
-			union {
-				IndexType nextFreeIndex;
-				alignas(T) std::array<std::byte, sizeof(T)> bytes;
-			};
-		};
+		// Public fields
+		std::unique_ptr<Page> nextPage;
+		Page* prevPage = this;
 		
 		constexpr Page() noexcept {
-			Format();
+			// Format page by setting up free list indices
+			for (size_t i = 0; i < PageSize; ++i) {
+				_items[i].nextFreeIndex = static_cast<IndexType>(i + 1);
+			}
 		}
 		
 		constexpr Page(const Page&) = delete;
@@ -137,20 +152,14 @@ private:
 		[[nodiscard]]
 		constexpr bool Empty() const noexcept { return _size == 0; }
 		
-		constexpr void Format() noexcept {
-			assert(_size == 0);
-			
-			_freeListHead = 0;
-			
-			for (size_t i = 0; i < PageSize; ++i) {
-				_items[i].nextFreeIndex = static_cast<IndexType>(i + 1);
-			}
-		}
-		
-	public:
-		std::unique_ptr<Page> nextPage;
-		
 	private:
+		struct ItemStorage {
+			union {
+				IndexType nextFreeIndex;
+				alignas(T) std::array<std::byte, sizeof(T)> bytes;
+			};
+		};
+		
 		static constexpr ItemStorage* StorageFromPointer(void* p) {
 			return static_cast<ItemStorage*>(
 				static_cast<void*>(
@@ -170,6 +179,6 @@ private:
 		IndexType _size = 0;
 	};
 	
-	std::unique_ptr<Page> _firstPage;
+	Page _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };
