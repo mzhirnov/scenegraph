@@ -277,27 +277,23 @@ TEST(PoolAllocator, Allocate) {
 	void* addr3;
 	
 	{
-		auto obj = std::construct_at(allocator.Allocate());
-		addr2 = obj;
+		addr2 = allocator.Allocate();
 		EXPECT_NE(addr1, addr2);
-		std::destroy_at(obj);
-		allocator.Deallocate(obj);
+		allocator.Deallocate(addr2);
 	}
 	{
-		auto obj = std::construct_at(allocator.Allocate());
-		addr3 = obj;
+		addr3 = allocator.Allocate();
 		EXPECT_NE(addr1, addr3);
-		std::destroy_at(obj);
-		allocator.Deallocate(obj);
+		allocator.Deallocate(addr3);
 	}
 	
 	EXPECT_EQ(addr2, addr3);
 	
 	allocator.Deallocate(p);
 	
-	int* p1 = allocator.Allocate();
-	int* p2 = allocator.Allocate();
-	int* p3 = allocator.Allocate();
+	auto p1 = allocator.Allocate();
+	auto p2 = allocator.Allocate();
+	auto p3 = allocator.Allocate();
 	
 	EXPECT_EQ(addr1, p1);
 	EXPECT_EQ(addr2, p2);

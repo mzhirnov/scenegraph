@@ -133,13 +133,13 @@ int main() {
 	std::cout << p << '\n';
 	
 	{
-		auto obj = std::construct_at(allocator.Allocate());
+		auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
 		std::cout << obj << " align: " << alignof(AutoObject) << " size: " << sizeof(AutoObject) << " value: " << obj->Value() << '\n';
 		std::destroy_at(obj);
 		allocator.Deallocate(obj);
 	}
 	{
-		auto obj = std::construct_at(allocator.Allocate());
+		auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
 		std::cout << obj << '\n';
 		std::destroy_at(obj);
 		allocator.Deallocate(obj);
@@ -147,7 +147,7 @@ int main() {
 	
 	allocator.Deallocate(p);
 	
-	AutoObject *o1, *o2, *o3;
+	void *o1, *o2, *o3;
 	
 	std::cout << (o1 = allocator.Allocate()) << '\n';
 	std::cout << (o2 = allocator.Allocate()) << '\n';

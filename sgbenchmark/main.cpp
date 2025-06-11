@@ -97,7 +97,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 	
 	for (auto _ : state) {
 		for (auto& node : nodes) {
-			node = allocator.Allocate();
+			node = (Node*)allocator.Allocate();
 		}
 		
 		for (auto& node : nodes) {
@@ -105,7 +105,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			node = allocator.Allocate();
+			node = (Node*)allocator.Allocate();
 		}
 		
 		for (auto& node : nodes) {
