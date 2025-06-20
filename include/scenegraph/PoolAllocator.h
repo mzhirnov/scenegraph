@@ -6,13 +6,13 @@
 ///
 /// Free list paged pool allocator
 ///
-template <typename T, size_t PageSize>
-class PoolAllocator {
+template <size_t Size, size_t Align, size_t PageSize>
+class BasicPoolAllocator {
 public:
-	constexpr PoolAllocator() = default;
+	constexpr BasicPoolAllocator() = default;
 	
 	[[nodiscard]]
-	constexpr T* Allocate() noexcept {
+	constexpr void* Allocate() noexcept {
 		// Try allocate from occupied pages, from newer to older
 		for (auto page = &_firstPage; page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate()) {
@@ -37,7 +37,12 @@ public:
 		return p;
 	}
 	
-	constexpr void Deallocate(T* p) noexcept {
+	constexpr void Deallocate(void* p) noexcept {
+		// Deallocating nullptr must be ok
+		if (!p) {
+			return;
+		}
+		
 		if (_firstPage.TryDeallocate(p)) {
 			return;
 		}
@@ -45,7 +50,7 @@ public:
 		// Try deallocate from extra pages, older down to newer
 		for (auto page = _firstPage.nextPage.get(); page; page = page->nextPage.get()) {
 			if (page->TryDeallocate(p)) {
-				// If deallocated and the page got empty, move the page to free list
+				// If deallocated and the page got empty, move it to free list
 				if (page->Empty()) {
 					if (page->nextPage) {
 						page->nextPage->prevPage = page->prevPage;
@@ -67,7 +72,7 @@ public:
 			}
 		}
 		
-		assert(!"Invalid pointer");
+		assert(false && "Invalid pointer");
 	}
 	
 private:
@@ -76,7 +81,7 @@ private:
 		using IndexType = uint16_t;
 		
 		static_assert(std::numeric_limits<IndexType>::max() >= PageSize);
-		static_assert(sizeof(IndexType) <= sizeof(T));
+		static_assert(sizeof(IndexType) <= Size);
 		
 		// Public fields
 		std::unique_ptr<Page> nextPage;
@@ -105,7 +110,7 @@ private:
 		}
 		
 		[[nodiscard]]
-		constexpr T* TryAllocate() noexcept {
+		constexpr void* TryAllocate() noexcept {
 			// The page is full
 			if (_freeListHead >= PageSize) {
 				return nullptr;
@@ -117,15 +122,10 @@ private:
 			
 			_size++;
 			
-			return static_cast<T*>(static_cast<void*>(storage.bytes.data()));
+			return storage.bytes.data();
 		}
 		
-		constexpr bool TryDeallocate(T* p) noexcept {
-			// Deallocating nullptr must be ok
-			if (!p) {
-				return true;
-			}
-			
+		constexpr bool TryDeallocate(void* p) noexcept {
 			// The pointer doesn't belong to this page
 			if (!IsOwnPointer(p)) {
 				return false;
@@ -156,7 +156,7 @@ private:
 		struct ItemStorage {
 			union {
 				IndexType nextFreeIndex;
-				alignas(T) std::array<std::byte, sizeof(T)> bytes;
+				alignas(Align) std::array<std::byte, Size> bytes;
 			};
 		};
 		
@@ -182,3 +182,6 @@ private:
 	Page _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };
+
+template <typename T, size_t PageSize>
+using PoolAllocator = BasicPoolAllocator<sizeof(T), alignof(T), PageSize>;
