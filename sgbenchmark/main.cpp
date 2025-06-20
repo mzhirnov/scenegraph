@@ -12,7 +12,7 @@ public:
 
 static void BM_ForwardListPushFront(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	ForwardList<Node> list;
 	for (auto _ : state) {
 		for (auto& node : nodes) {
@@ -24,7 +24,7 @@ BENCHMARK(BM_ForwardListPushFront)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_CircularForwardListPushFront(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	CircularForwardList<Node> list;
 	for (auto _ : state) {
 		for (auto& node : nodes) {
@@ -36,7 +36,7 @@ BENCHMARK(BM_CircularForwardListPushFront)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_ForwardListPushBack(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	ForwardList<Node> list;
 	for (auto _ : state) {
 		for (auto& node : nodes) {
@@ -48,7 +48,7 @@ BENCHMARK(BM_ForwardListPushBack)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_CircularForwardListPushBack(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	CircularForwardList<Node> list;
 	for (auto _ : state) {
 		for (auto& node : nodes) {
@@ -60,7 +60,7 @@ BENCHMARK(BM_CircularForwardListPushBack)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_ForwardListIterate(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	ForwardList<Node> list;
 	for (auto& node : nodes) {
 		list.PushBack(node);
@@ -76,7 +76,7 @@ BENCHMARK(BM_ForwardListIterate)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_CircularForwardListIterate(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node> nodes(size);
+	std::vector<Node> nodes(static_cast<size_t>(size));
 	CircularForwardList<Node> list;
 	for (auto& node : nodes) {
 		list.PushBack(node);
@@ -92,12 +92,12 @@ BENCHMARK(BM_CircularForwardListIterate)->RangeMultiplier(2)->Range(1, 32);
 
 static void BM_PoolAllocator(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node*> nodes(size);
+	std::vector<Node*> nodes(static_cast<size_t>(size));
 	PoolAllocator<Node, 1024> allocator;
 	
 	for (auto _ : state) {
 		for (auto& node : nodes) {
-			node = (Node*)allocator.Allocate();
+			node = static_cast<Node*>(allocator.Allocate());
 		}
 		
 		for (auto& node : nodes) {
@@ -105,7 +105,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			node = (Node*)allocator.Allocate();
+			node = static_cast<Node*>(allocator.Allocate());
 		}
 		
 		for (auto& node : nodes) {
@@ -118,7 +118,7 @@ BENCHMARK(BM_PoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
 static void BM_StdAllocator(benchmark::State& state) {
 	const auto size = state.range();
-	std::vector<Node*> nodes(size);
+	std::vector<Node*> nodes(static_cast<size_t>(size));
 	std::allocator<Node> allocator;
 	
 	for (auto _ : state) {

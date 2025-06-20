@@ -10,12 +10,40 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(AddCXXCompilerFlag)
+
+# Turn compiler warnings up to 11
+add_cxx_compiler_flag(-Wall)
+add_cxx_compiler_flag(-Wextra)
+add_cxx_compiler_flag(-Wshadow)
+add_cxx_compiler_flag(-Wfloat-equal)
+add_cxx_compiler_flag(-Wold-style-cast)
+add_cxx_compiler_flag(-Wconversion)
+add_cxx_compiler_flag(-Werror)
+add_cxx_compiler_flag(-Wsuggest-override)
+add_cxx_compiler_flag(-Wshorten-64-to-32)
+add_cxx_compiler_flag(-Wno-deprecated-declarations)
+add_cxx_compiler_flag(-Wno-deprecated)
+add_cxx_compiler_flag(-Wstrict-aliasing)
+add_cxx_compiler_flag(-Wthread-safety)
+add_cxx_compiler_flag(-pedantic)
+add_cxx_compiler_flag(-pedantic-errors)
+add_cxx_compiler_flag(-fstrict-aliasing)
+
+#add_cxx_compiler_flag(-fno-exceptions)
+add_cxx_compiler_flag(-flto)
+add_cxx_compiler_flag(-Wno-lto-type-mismatch)
+
+# Export only public symbols
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo MinSizeRel)
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
 
 file(GLOB
   SOURCE_FILES
