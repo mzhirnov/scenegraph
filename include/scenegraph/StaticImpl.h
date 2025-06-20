@@ -22,6 +22,9 @@ public:
 	
 	constexpr T* operator->() noexcept { return reinterpret_cast<T*>(_storage.data()); }
 	constexpr const T* operator->() const noexcept { return reinterpret_cast<const T*>(_storage.data()); }
+	
+	constexpr T& operator*() noexcept { return *reinterpret_cast<T*>(_storage.data()); }
+	constexpr const T& operator*() const noexcept { return *reinterpret_cast<const T*>(_storage.data()); }
 
 private:
 	alignas(Align) std::array<std::byte, Size> _storage;
