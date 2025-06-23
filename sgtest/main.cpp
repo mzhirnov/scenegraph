@@ -2,6 +2,7 @@
 #include <scenegraph/ForwardList.h>
 #include <scenegraph/Hierarchy.h>
 #include <scenegraph/PoolAllocator.h>
+#include <scenegraph/MonotonicAllocator.h>
 #include <string>
 
 class node : public ForwardListNode<> {
@@ -302,4 +303,36 @@ TEST(PoolAllocator, Allocate) {
 	allocator.Deallocate(p1);
 	allocator.Deallocate(p2);
 	allocator.Deallocate(p3);
+}
+
+TEST(MonotonicAllocator, GetAllocator) {
+	using Allocator = MonotonicAllocator<48>;
+	
+	Allocator allocator;
+	
+	auto* p1 = allocator.Allocate(sizeof(int), alignof(int));
+	auto* p2 = allocator.Allocate(sizeof(int), alignof(int));
+	
+	auto a1 = Allocator::GetAllocator(p1);
+	auto a2 = Allocator::GetAllocator(p2);
+	
+	EXPECT_EQ(a1, std::addressof(allocator));
+	EXPECT_EQ(a2, std::addressof(allocator));
+	
+	allocator.Deallocate(p1);
+	allocator.Deallocate(p2);
+	
+	//----------------------------------------------------------------------------
+	
+	auto* p3 = allocator.Allocate(sizeof(int), alignof(int));
+	auto* p4 = allocator.Allocate(sizeof(int), alignof(int));
+	
+	auto a3 = Allocator::GetAllocator(p3);
+	auto a4 = Allocator::GetAllocator(p4);
+	
+	EXPECT_EQ(a3, std::addressof(allocator));
+	EXPECT_EQ(a4, std::addressof(allocator));
+	
+	allocator.Deallocate(p3);
+	allocator.Deallocate(p4);
 }

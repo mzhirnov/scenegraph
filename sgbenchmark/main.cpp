@@ -2,12 +2,13 @@
 
 #include <scenegraph/ForwardList.h>
 #include <scenegraph/PoolAllocator.h>
+#include <scenegraph/MonotonicAllocator.h>
 
 #include <vector>
-//#include <experimental/memory_resource>
 
 class Node : public ForwardListNode<> {
 public:
+	alignas(16) float buffer[4];
 };
 
 static void BM_ForwardListPushFront(benchmark::State& state) {
@@ -116,6 +117,32 @@ static void BM_PoolAllocator(benchmark::State& state) {
 
 BENCHMARK(BM_PoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
+static void BM_MonotonicAllocator(benchmark::State& state) {
+	const auto size = state.range();
+	std::vector<Node*> nodes(static_cast<size_t>(size));
+	MonotonicAllocator<65536> allocator;
+	
+	for (auto _ : state) {
+		for (auto& node : nodes) {
+			node = static_cast<Node*>(allocator.Allocate(sizeof(Node), alignof(Node)));
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+		
+		for (auto& node : nodes) {
+			node = static_cast<Node*>(allocator.Allocate(sizeof(Node), alignof(Node)));
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+	}
+}
+
+BENCHMARK(BM_MonotonicAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
+
 static void BM_StdAllocator(benchmark::State& state) {
 	const auto size = state.range();
 	std::vector<Node*> nodes(static_cast<size_t>(size));
@@ -141,31 +168,5 @@ static void BM_StdAllocator(benchmark::State& state) {
 }
 
 BENCHMARK(BM_StdAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
-
-//static void BM_StdPoolAllocator(benchmark::State& state) {
-//	const auto size = state.range();
-//	std::vector<Node*> nodes(size);
-//	std::experimental::pmr::unsynchronized_pool_resource allocator;
-//
-//	for (auto _ : state) {
-//		for (auto& node : nodes) {
-//			node = (Node*)allocator.allocate(sizeof(Node));
-//		}
-//
-//		for (auto& node : nodes) {
-//			allocator.deallocate(node);
-//		}
-//
-//		for (auto& node : nodes) {
-//			node = (Node*)allocator.allocate(sizeof(Node));
-//		}
-//
-//		for (auto& node : nodes) {
-//			allocator.deallocate(node);
-//		}
-//	}
-//}
-//
-//BENCHMARK(BM_StdPoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
 BENCHMARK_MAIN();

@@ -1,6 +1,8 @@
 #include <scenegraph/SceneObject.h>
 #include <scenegraph/PoolAllocator.h>
+#include <scenegraph/MonotonicAllocator.h>
 #include <scenegraph/StaticImpl.h>
+#include <scenegraph/ScopeGuard.h>
 
 #include <iostream>
 #include <memory>
@@ -127,35 +129,64 @@ int main() {
 	puts("---");
 	sceneObject.Update();
 	
-	PoolAllocator<AutoObject, 2> allocator;
+	{
+		PoolAllocator<AutoObject, 2> allocator;
+		
+		auto p = allocator.Allocate();
+		std::cout << p << '\n';
+		
+		{
+			auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
+			std::cout << obj << " align: " << alignof(AutoObject) << " size: " << sizeof(AutoObject) << " value: " << obj->Value() << '\n';
+			std::destroy_at(obj);
+			allocator.Deallocate(obj);
+		}
+		{
+			auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
+			std::cout << obj << '\n';
+			std::destroy_at(obj);
+			allocator.Deallocate(obj);
+		}
+		
+		allocator.Deallocate(p);
+		
+		void *o1, *o2, *o3;
+		
+		std::cout << (o1 = allocator.Allocate()) << '\n';
+		std::cout << (o2 = allocator.Allocate()) << '\n';
+		std::cout << (o3 = allocator.Allocate()) << '\n';
+		
+		allocator.Deallocate(o1);
+		allocator.Deallocate(o2);
+		allocator.Deallocate(o3);
+	}
 	
-	auto p = allocator.Allocate();
-	std::cout << p << '\n';
+	TRY	{
+		ON_SCOPE_EXIT_SUCCESS() { puts("scope_exit 1"); };
+		ON_SCOPE_EXIT_FAILURE() { puts("scope_exit 2"); };
+		ON_SCOPE_EXIT() { puts("scope_exit 3"); };
+		
+		ScopeGuard guard = [] {
+			puts("scope_exit 4");
+		};
+		
+		guard.Cancel();
+		
+		THROW(1);
+	}
+	CATCH_ALL() {
+	}
 	
 	{
-		auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
-		std::cout << obj << " align: " << alignof(AutoObject) << " size: " << sizeof(AutoObject) << " value: " << obj->Value() << '\n';
-		std::destroy_at(obj);
-		allocator.Deallocate(obj);
+		using Allocator = MonotonicAllocator<64>;
+		
+		Allocator allocator;
+		
+		std::cout << "max size: " << allocator.MaxSize() << " page size: " << allocator.GetPageSize() << '\n';
+		
+		auto* p = allocator.Allocate(sizeof(int), alignof(int));
+		allocator.Deallocate(p);
 	}
-	{
-		auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
-		std::cout << obj << '\n';
-		std::destroy_at(obj);
-		allocator.Deallocate(obj);
-	}
-	
-	allocator.Deallocate(p);
-	
-	void *o1, *o2, *o3;
-	
-	std::cout << (o1 = allocator.Allocate()) << '\n';
-	std::cout << (o2 = allocator.Allocate()) << '\n';
-	std::cout << (o3 = allocator.Allocate()) << '\n';
-	
-	allocator.Deallocate(o1);
-	allocator.Deallocate(o2);
-	allocator.Deallocate(o3);
 	
 	return 0;
 }
