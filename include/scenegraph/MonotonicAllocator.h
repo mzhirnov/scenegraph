@@ -16,10 +16,16 @@ public:
 		uint32_t offset;
 	};
 	
+	template <typename T>
+	[[nodiscard]]
+	constexpr T* Allocate() noexcept {
+		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
+	}
+	
 	[[nodiscard]]
 	constexpr void* Allocate(size_t size, size_t align) noexcept {
 		// Try allocate from occupied pages, from newer to older
-		for (auto page = &_firstPage; page; page = page->nextPage.get()) {
+		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate(size, align)) {
 				return p;
 			}
@@ -30,14 +36,20 @@ public:
 			std::exchange(_firstFreePage, std::move(_firstFreePage->nextPage)) :
 			std::make_unique<Page>(this);
 		
-		// Insert new page to the end of the list
-		assert(_firstPage.prevPage->nextPage == nullptr);
-		newPage->prevPage = _firstPage.prevPage;
-		_firstPage.prevPage->nextPage = std::move(newPage);
-		_firstPage.prevPage = _firstPage.prevPage->nextPage.get();
+		// Insert new page to the front of the list
+		if (_firstPage) {
+			newPage->prevPage = _firstPage->prevPage;
+			_firstPage->prevPage = newPage.get();
+			newPage->nextPage = std::move(_firstPage);
+		}
+		else {
+			newPage->prevPage = newPage.get();
+		}
+		
+		_firstPage = std::move(newPage);
 		
 		// Allocation from empty page must succeed
-		auto p = _firstPage.prevPage->TryAllocate(size, align);
+		auto p = _firstPage->TryAllocate(size, align);
 		assert(p != nullptr);
 		return p;
 	}
@@ -54,13 +66,13 @@ public:
 		page->Deallocate(header->size);
 		
 		// If deallocated from extra page and the page got empty, move it to free list
-		if (page != &_firstPage && page->Empty()) {
+		if (page->prevPage != page && page->Empty()) {
 			if (page->nextPage) {
 				page->nextPage->prevPage = page->prevPage;
 			}
 			else {
 				// If removing the tail, update last page
-				_firstPage.prevPage = page->prevPage;
+				_firstPage->prevPage = page->prevPage;
 			}
 			
 			// Remove from busy list
@@ -74,12 +86,6 @@ public:
 	}
 	
 	[[nodiscard]]
-	constexpr size_t MaxSize() const noexcept { return _firstPage.MaxSize(); }
-	
-	[[nodiscard]]
-	static constexpr size_t GetPageSize() noexcept { return sizeof(Page); }
-	
-	[[nodiscard]]
 	static constexpr MonotonicAllocator* GetAllocator(void* p) noexcept {
 		ItemHeader* header;
 		auto page = GetPage(p, &header);
@@ -89,6 +95,10 @@ public:
 private:
 	class Page {
 	public:
+		// Public fields
+		std::unique_ptr<Page> nextPage;
+		Page* prevPage = this;
+		
 		constexpr explicit Page(MonotonicAllocator* allocator) noexcept
 			: _header(allocator)
 		{
@@ -154,10 +164,6 @@ private:
 		
 		[[nodiscard]]
 		constexpr size_t MaxSize() const noexcept { return _bytes.size(); }
-		
-	public:
-		std::unique_ptr<Page> nextPage;
-		Page* prevPage = this;
 	
 	private:
 		struct PageHeader {
@@ -195,6 +201,6 @@ private:
 	}
 	
 private:
-	Page _firstPage{this};
+	std::unique_ptr<Page> _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };

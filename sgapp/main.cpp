@@ -182,9 +182,7 @@ int main() {
 		
 		Allocator allocator;
 		
-		std::cout << "max size: " << allocator.MaxSize() << " page size: " << allocator.GetPageSize() << '\n';
-		
-		auto* p = allocator.Allocate(sizeof(int), alignof(int));
+		auto* p = allocator.Allocate<int>();
 		allocator.Deallocate(p);
 	}
 	

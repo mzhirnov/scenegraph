@@ -14,7 +14,7 @@ public:
 	[[nodiscard]]
 	constexpr void* Allocate() noexcept {
 		// Try allocate from occupied pages, from newer to older
-		for (auto page = &_firstPage; page; page = page->nextPage.get()) {
+		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate()) {
 				return p;
 			}
@@ -25,14 +25,20 @@ public:
 			std::exchange(_firstFreePage, std::move(_firstFreePage->nextPage)) :
 			std::make_unique<Page>();
 		
-		// Insert new page to the end of the list
-		assert(_firstPage.prevPage->nextPage == nullptr);
-		newPage->prevPage = _firstPage.prevPage;
-		_firstPage.prevPage->nextPage = std::move(newPage);
-		_firstPage.prevPage = _firstPage.prevPage->nextPage.get();
+		// Insert new page to the front of the list
+		if (_firstPage) {
+			newPage->prevPage = _firstPage->prevPage;
+			_firstPage->prevPage = newPage.get();
+			newPage->nextPage = std::move(_firstPage);
+		}
+		else {
+			newPage->prevPage = newPage.get();
+		}
+		
+		_firstPage = std::move(newPage);
 		
 		// Allocation from empty page must succeed
-		auto p = _firstPage.prevPage->TryAllocate();
+		auto p = _firstPage->TryAllocate();
 		assert(p != nullptr);
 		return p;
 	}
@@ -43,21 +49,17 @@ public:
 			return;
 		}
 		
-		if (_firstPage.TryDeallocate(p)) {
-			return;
-		}
-		
-		// Try deallocate from extra pages, older down to newer
-		for (auto page = _firstPage.nextPage.get(); page; page = page->nextPage.get()) {
+		// Try deallocate from older to newer
+		for (auto page = _firstPage->prevPage; page; page = page->prevPage->nextPage ? page->prevPage : nullptr) {
 			if (page->TryDeallocate(p)) {
-				// If deallocated and the page got empty, move it to free list
-				if (page->Empty()) {
+				// If deallocated from extra page and the page got empty, move it to free list
+				if (page->prevPage != page && page->Empty()) {
 					if (page->nextPage) {
 						page->nextPage->prevPage = page->prevPage;
 					}
 					else {
 						// If removing the tail, update last page
-						_firstPage.prevPage = page->prevPage;
+						_firstPage->prevPage = page->prevPage;
 					}
 					
 					// Remove from busy list
@@ -101,7 +103,7 @@ private:
 		constexpr Page& operator=(Page&&) = delete;
 		
 		constexpr ~Page() {
-			assert(_size == 0 && "Destroying items storage with external pointers to it");
+			assert(_busyCount == 0 && "Destroying items storage with external pointers to it");
 			
 			// Destroy list inplace in the loop instead of auto recursion
 			while (nextPage) {
@@ -120,7 +122,7 @@ private:
 			auto& storage = _items[_freeListHead];
 			_freeListHead = storage.nextFreeIndex;
 			
-			_size++;
+			_busyCount++;
 			
 			return storage.bytes.data();
 		}
@@ -137,9 +139,9 @@ private:
 			_freeListHead = GetPointerIndex(p);
 			
 			assert(_freeListHead <= PageSize);
-			assert(_size > 0);
+			assert(_busyCount > 0);
 			
-			_size--;
+			_busyCount--;
 			
 			return true;
 		}
@@ -150,7 +152,7 @@ private:
 		}
 		
 		[[nodiscard]]
-		constexpr bool Empty() const noexcept { return _size == 0; }
+		constexpr bool Empty() const noexcept { return _busyCount == 0; }
 		
 	private:
 		struct ItemStorage {
@@ -176,10 +178,10 @@ private:
 	private:
 		std::array<ItemStorage, PageSize> _items;
 		IndexType _freeListHead = 0;
-		IndexType _size = 0;
+		IndexType _busyCount = 0;
 	};
 	
-	Page _firstPage;
+	std::unique_ptr<Page> _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };
 

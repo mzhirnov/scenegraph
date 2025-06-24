@@ -310,8 +310,8 @@ TEST(MonotonicAllocator, GetAllocator) {
 	
 	Allocator allocator;
 	
-	auto* p1 = allocator.Allocate(sizeof(int), alignof(int));
-	auto* p2 = allocator.Allocate(sizeof(int), alignof(int));
+	auto* p1 = allocator.Allocate<int>();
+	auto* p2 = allocator.Allocate<int>();
 	
 	auto a1 = Allocator::GetAllocator(p1);
 	auto a2 = Allocator::GetAllocator(p2);
@@ -324,8 +324,8 @@ TEST(MonotonicAllocator, GetAllocator) {
 	
 	//----------------------------------------------------------------------------
 	
-	auto* p3 = allocator.Allocate(sizeof(int), alignof(int));
-	auto* p4 = allocator.Allocate(sizeof(int), alignof(int));
+	auto* p3 = allocator.Allocate<int>();
+	auto* p4 = allocator.Allocate<int>();
 	
 	auto a3 = Allocator::GetAllocator(p3);
 	auto a4 = Allocator::GetAllocator(p4);
