@@ -128,7 +128,7 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			allocator.Deallocate(node);
+			allocator.Deallocate(node, sizeof(Node));
 		}
 		
 		for (auto& node : nodes) {
@@ -136,7 +136,7 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			allocator.Deallocate(node);
+			allocator.Deallocate(node, sizeof(Node));
 		}
 	}
 }

@@ -270,7 +270,9 @@ TEST(Hierarchy, Create) {
 }
 
 TEST(PoolAllocator, Allocate) {
-	PoolAllocator<int, 2> allocator;
+	using Allocator = PoolAllocator<int, 2>;
+	
+	Allocator allocator;
 	
 	auto p = allocator.Allocate();
 	void* addr1 = p;
@@ -300,6 +302,14 @@ TEST(PoolAllocator, Allocate) {
 	EXPECT_EQ(addr2, p2);
 	EXPECT_NE(addr3, p3);
 	
+	auto a1 = Allocator::GetAllocator(p1);
+	auto a2 = Allocator::GetAllocator(p2);
+	auto a3 = Allocator::GetAllocator(p3);
+	
+	EXPECT_EQ(a1, std::addressof(allocator));
+	EXPECT_EQ(a2, std::addressof(allocator));
+	EXPECT_EQ(a3, std::addressof(allocator));
+	
 	allocator.Deallocate(p1);
 	allocator.Deallocate(p2);
 	allocator.Deallocate(p3);
@@ -319,8 +329,8 @@ TEST(MonotonicAllocator, GetAllocator) {
 	EXPECT_EQ(a1, std::addressof(allocator));
 	EXPECT_EQ(a2, std::addressof(allocator));
 	
-	allocator.Deallocate(p1);
-	allocator.Deallocate(p2);
+	allocator.Deallocate(p1, sizeof(int));
+	allocator.Deallocate(p2, sizeof(int));
 	
 	//----------------------------------------------------------------------------
 	
@@ -333,6 +343,6 @@ TEST(MonotonicAllocator, GetAllocator) {
 	EXPECT_EQ(a3, std::addressof(allocator));
 	EXPECT_EQ(a4, std::addressof(allocator));
 	
-	allocator.Deallocate(p3);
-	allocator.Deallocate(p4);
+	allocator.Deallocate(p3, sizeof(int));
+	allocator.Deallocate(p4, sizeof(int));
 }
