@@ -23,7 +23,7 @@ public:
 		// No free space. Take last free page or create new one
 		auto newPage = _firstFreePage ?
 			std::exchange(_firstFreePage, std::move(_firstFreePage->nextPage)) :
-			std::make_unique<Page>();
+			std::make_unique<Page>(this);
 		
 		// Insert new page to the front of the list
 		if (_firstPage) {
@@ -49,32 +49,34 @@ public:
 			return;
 		}
 		
-		// Try deallocate from older to newer
-		for (auto page = _firstPage->prevPage; page; page = page->prevPage->nextPage ? page->prevPage : nullptr) {
-			if (page->TryDeallocate(p)) {
-				// If deallocated from extra page and the page got empty, move it to free list
-				if (page->prevPage != page && page->Empty()) {
-					if (page->nextPage) {
-						page->nextPage->prevPage = page->prevPage;
-					}
-					else {
-						// If removing the tail, update last page
-						_firstPage->prevPage = page->prevPage;
-					}
-					
-					// Remove from busy list
-					auto emptyPage = std::move(page->prevPage->nextPage);
-					page->prevPage->nextPage = std::move(page->nextPage);
-					
-					// Add to free list
-					emptyPage->nextPage = std::move(_firstFreePage);
-					_firstFreePage = std::move(emptyPage);
-				}
-				return;
-			}
-		}
+		auto page = GetPage(p);
 		
-		assert(false && "Invalid pointer");
+		page->Deallocate(p);
+		
+		// If deallocated from extra page and the page got empty, move it to free list
+		if (page->prevPage != page && page->Empty()) {
+			if (page->nextPage) {
+				page->nextPage->prevPage = page->prevPage;
+			}
+			else {
+				// If removing the tail, update last page
+				_firstPage->prevPage = page->prevPage;
+			}
+			
+			// Remove from busy list
+			auto emptyPage = std::move(page->prevPage->nextPage);
+			page->prevPage->nextPage = std::move(page->nextPage);
+			
+			// Add to free list
+			emptyPage->nextPage = std::move(_firstFreePage);
+			_firstFreePage = std::move(emptyPage);
+		}
+	}
+	
+	[[nodiscard]]
+	static constexpr BasicPoolAllocator* GetAllocator(void* p) noexcept {
+		auto page = GetPage(p);
+		return page->Allocator();
 	}
 	
 private:
@@ -89,7 +91,17 @@ private:
 		std::unique_ptr<Page> nextPage;
 		Page* prevPage = this;
 		
-		constexpr Page() noexcept {
+		struct ItemStorage {
+			union {
+				uint32_t offset;
+				IndexType nextFreeIndex;
+			};
+			alignas(Align) std::array<std::byte, Size> bytes;
+		};
+		
+		constexpr explicit Page(BasicPoolAllocator* allocator) noexcept
+			: _allocator(allocator)
+		{
 			// Format page by setting up free list indices
 			for (size_t i = 0; i < PageSize; ++i) {
 				_items[i].nextFreeIndex = static_cast<IndexType>(i + 1);
@@ -124,26 +136,25 @@ private:
 			
 			_busyCount++;
 			
-			return storage.bytes.data();
+			auto p = storage.bytes.data();
+			
+			storage.offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
+			
+			return p;
 		}
 		
-		constexpr bool TryDeallocate(void* p) noexcept {
-			// The pointer doesn't belong to this page
-			if (!IsOwnPointer(p)) {
-				return false;
-			}
+		constexpr void Deallocate(void* p) noexcept {
+			assert(IsOwnPointer(p));
 			
 			// Add item to free list
 			auto storage = StorageFromPointer(p);
 			storage->nextFreeIndex = _freeListHead;
-			_freeListHead = GetPointerIndex(p);
+			_freeListHead = GetStorageIndex(storage);
 			
 			assert(_freeListHead <= PageSize);
 			assert(_busyCount > 0);
 			
 			_busyCount--;
-			
-			return true;
 		}
 		
 		[[nodiscard]]
@@ -154,13 +165,8 @@ private:
 		[[nodiscard]]
 		constexpr bool Empty() const noexcept { return _busyCount == 0; }
 		
-	private:
-		struct ItemStorage {
-			union {
-				IndexType nextFreeIndex;
-				alignas(Align) std::array<std::byte, Size> bytes;
-			};
-		};
+		[[nodiscard]]
+		constexpr BasicPoolAllocator* Allocator() const noexcept { return _allocator; }
 		
 		static constexpr ItemStorage* StorageFromPointer(void* p) {
 			return static_cast<ItemStorage*>(
@@ -169,18 +175,26 @@ private:
 					offsetof(ItemStorage, bytes)));
 		}
 		
-		constexpr IndexType GetPointerIndex(const void* p) const noexcept {
-			return static_cast<IndexType>(
-				static_cast<const ItemStorage*>(p) -
-				static_cast<const ItemStorage*>(static_cast<const void*>(&_items)));
+	private:
+		constexpr IndexType GetStorageIndex(const ItemStorage* p) const noexcept {
+			return static_cast<IndexType>(p - static_cast<const ItemStorage*>(static_cast<const void*>(_items.data())));
 		}
 		
 	private:
+		BasicPoolAllocator* _allocator = nullptr;
 		std::array<ItemStorage, PageSize> _items;
 		IndexType _freeListHead = 0;
 		IndexType _busyCount = 0;
 	};
 	
+	[[nodiscard]]
+	static constexpr Page* GetPage(void* p) noexcept {
+		auto storage = Page::StorageFromPointer(p);
+		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - storage->offset);
+		return page;
+	}
+	
+private:
 	std::unique_ptr<Page> _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };

@@ -12,7 +12,6 @@ public:
 	constexpr MonotonicAllocator() = default;
 	
 	struct ItemHeader {
-		uint32_t size;
 		uint32_t offset;
 	};
 	
@@ -54,16 +53,15 @@ public:
 		return p;
 	}
 	
-	constexpr void Deallocate(void* p) noexcept {
+	constexpr void Deallocate(void* p, size_t size) noexcept {
 		// Deallocating nullptr must be ok
 		if (!p) {
 			return;
 		}
 		
-		ItemHeader* header;
-		auto page = GetPage(p, &header);
+		auto page = GetPage(p);
 		
-		page->Deallocate(header->size);
+		page->Deallocate(size);
 		
 		// If deallocated from extra page and the page got empty, move it to free list
 		if (page->prevPage != page && page->Empty()) {
@@ -87,8 +85,7 @@ public:
 	
 	[[nodiscard]]
 	static constexpr MonotonicAllocator* GetAllocator(void* p) noexcept {
-		ItemHeader* header;
-		auto page = GetPage(p, &header);
+		auto page = GetPage(p);
 		return page->Allocator();
 	}
 	
@@ -116,43 +113,41 @@ private:
 			// Align must be non zero power of two
 			assert(align && !(align & (align - 1)));
 			
-			// Header must be located adjacent to allocated block, align it according to the block alignment
-			const auto headerAlignMask = std::max(alignof(ItemHeader), align) - 1;
+			const auto headerAlignMask = alignof(ItemHeader) - 1;
 			const auto blockAlignMask = align - 1;
 			
 			// Total allocation block begins here
-			const auto baseOffset = _header.allocatedSize;
+			const auto baseOffset = _header.currentOffset;
 			// Aligned header
-			const auto headerOffset = (_header.allocatedSize + headerAlignMask) & ~headerAlignMask;
-			_header.allocatedSize = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
+			const auto headerOffset = (_header.currentOffset + headerAlignMask) & ~headerAlignMask;
+			_header.currentOffset = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
 			// Aligned block
-			const auto blockOffset = (_header.allocatedSize + blockAlignMask) & ~blockAlignMask;
-			_header.allocatedSize = static_cast<uint32_t>(blockOffset + size);
+			const auto blockOffset = (_header.currentOffset + blockAlignMask) & ~blockAlignMask;
+			_header.currentOffset = static_cast<uint32_t>(blockOffset + size);
 			
-			if (_header.allocatedSize > _bytes.size()) {
-				_header.allocatedSize = baseOffset;
+			if (_header.currentOffset > _bytes.size()) {
+				_header.currentOffset = baseOffset;
 				return nullptr;
 			}
 			
 			auto p = _bytes.data() + blockOffset;
 			auto header = std::launder(reinterpret_cast<ItemHeader*>(p) - 1);
 			
-			// Totally allocated bytes
-			header->size = _header.allocatedSize - baseOffset;
 			// Offset from allocated block to page start
 			header->offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
+			
+			_header.allocatedSize += static_cast<int>(size);
 			
 			return p;
 		}
 		
 		constexpr void Deallocate(size_t size) noexcept {
-			_header.deallocatedSize += size;
+			_header.allocatedSize -= static_cast<int>(size);
 			
-			assert(_header.deallocatedSize <= _header.allocatedSize);
+			assert(_header.allocatedSize >= 0);
 			
-			if (_header.allocatedSize == _header.deallocatedSize) {
-				_header.allocatedSize = 0;
-				_header.deallocatedSize = 0;
+			if (_header.allocatedSize == 0) {
+				_header.currentOffset = 0;
 			}
 		}
 		
@@ -161,9 +156,6 @@ private:
 		
 		[[nodiscard]]
 		constexpr MonotonicAllocator* Allocator() const noexcept { return _header.allocator; }
-		
-		[[nodiscard]]
-		constexpr size_t MaxSize() const noexcept { return _bytes.size(); }
 	
 	private:
 		struct PageHeader {
@@ -174,8 +166,8 @@ private:
 			
 			MonotonicAllocator* allocator = nullptr;
 			
-			uint32_t allocatedSize = 0;
-			uint32_t deallocatedSize = 0;
+			int allocatedSize = 0;
+			uint32_t currentOffset = 0;
 		};
 		
 		PageHeader _header;
@@ -194,9 +186,9 @@ private:
 	static_assert(sizeof(Page) == PageSize);
 	
 	[[nodiscard]]
-	static constexpr Page* GetPage(void* p, ItemHeader** header) noexcept {
-		*header = static_cast<ItemHeader*>(p) - 1;
-		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - (*header)->offset);
+	static constexpr Page* GetPage(void* p) noexcept {
+		auto header = static_cast<ItemHeader*>(p) - 1;
+		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - header->offset);
 		return page;
 	}
 	
