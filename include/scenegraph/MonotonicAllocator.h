@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <array>
 #include <cstddef>
 
@@ -9,20 +10,21 @@
 template <size_t PageSize>
 class MonotonicAllocator {
 public:
-	constexpr MonotonicAllocator() = default;
+	MonotonicAllocator() = default;
 	
-	struct ItemHeader {
-		uint32_t offset;
-	};
+	[[nodiscard]]
+	static MonotonicAllocator* GetAllocator(void* p) noexcept {
+		auto page = GetPage(p);
+		return page->Allocator();
+	}
 	
 	template <typename T>
-	[[nodiscard]]
-	constexpr T* Allocate() noexcept {
+	[[nodiscard]] T* Allocate() noexcept {
 		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
 	}
 	
 	[[nodiscard]]
-	constexpr void* Allocate(size_t size, size_t align) noexcept {
+	void* Allocate(size_t size, size_t align) noexcept {
 		// Try allocate from occupied pages, from newer to older
 		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate(size, align)) {
@@ -53,7 +55,7 @@ public:
 		return p;
 	}
 	
-	constexpr void Deallocate(void* p, size_t size) noexcept {
+	void Deallocate(void* p, size_t size) noexcept {
 		// Deallocating nullptr must be ok
 		if (!p) {
 			return;
@@ -83,25 +85,40 @@ public:
 		}
 	}
 	
-	[[nodiscard]]
-	static constexpr MonotonicAllocator* GetAllocator(void* p) noexcept {
-		auto page = GetPage(p);
-		return page->Allocator();
-	}
-	
 private:
-	class Page {
+	struct ItemHeader {
+		uint32_t offset;
+	};
+	
+	template <typename T>
+	class PageHeader {
 	public:
-		// Public fields
-		std::unique_ptr<Page> nextPage;
-		Page* prevPage = this;
-		
-		constexpr explicit Page(MonotonicAllocator* allocator) noexcept
-			: _header(allocator)
+		explicit PageHeader(MonotonicAllocator* allocator) noexcept
+			: _allocator(allocator)
 		{
 		}
 		
-		constexpr ~Page() {
+	protected:
+		std::unique_ptr<T> nextPage;
+		T* prevPage = static_cast<T*>(this);
+		
+		MonotonicAllocator* _allocator = nullptr;
+		int _allocatedSize = 0;
+		uint32_t _currentOffset = 0;
+	};
+	
+	class Page : public PageHeader<Page> {
+	public:
+		// Public fields
+		using PageHeader<Page>::nextPage;
+		using PageHeader<Page>::prevPage;
+		
+		explicit Page(MonotonicAllocator* allocator) noexcept
+			: PageHeader<Page>(allocator)
+		{
+		}
+		
+		~Page() {
 			// Destroy list inplace in the loop instead of auto recursion
 			while (nextPage) {
 				nextPage = std::move(nextPage->nextPage);
@@ -109,7 +126,7 @@ private:
 		}
 		
 		[[nodiscard]]
-		constexpr void* TryAllocate(size_t size, size_t align) noexcept {
+		void* TryAllocate(size_t size, size_t align) noexcept {
 			// Align must be non zero power of two
 			assert(align && !(align & (align - 1)));
 			
@@ -117,16 +134,18 @@ private:
 			const auto blockAlignMask = align - 1;
 			
 			// Total allocation block begins here
-			const auto baseOffset = _header.currentOffset;
-			// Aligned header
-			const auto headerOffset = (_header.currentOffset + headerAlignMask) & ~headerAlignMask;
-			_header.currentOffset = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
-			// Aligned block
-			const auto blockOffset = (_header.currentOffset + blockAlignMask) & ~blockAlignMask;
-			_header.currentOffset = static_cast<uint32_t>(blockOffset + size);
+			const auto baseOffset = this->_currentOffset;
 			
-			if (_header.currentOffset > _bytes.size()) {
-				_header.currentOffset = baseOffset;
+			// Aligned header
+			const auto headerOffset = (this->_currentOffset + headerAlignMask) & ~headerAlignMask;
+			this->_currentOffset = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
+			
+			// Aligned block
+			const auto blockOffset = (this->_currentOffset + blockAlignMask) & ~blockAlignMask;
+			this->_currentOffset = static_cast<uint32_t>(blockOffset + size);
+			
+			if (this->_currentOffset > _bytes.size()) {
+				this->_currentOffset = baseOffset;
 				return nullptr;
 			}
 			
@@ -136,46 +155,32 @@ private:
 			// Offset from allocated block to page start
 			header->offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
 			
-			_header.allocatedSize += static_cast<int>(size);
+			this->_allocatedSize += static_cast<int>(size);
 			
 			return p;
 		}
 		
-		constexpr void Deallocate(size_t size) noexcept {
-			_header.allocatedSize -= static_cast<int>(size);
+		void Deallocate(size_t size) noexcept {
+			this->_allocatedSize -= static_cast<int>(size);
 			
-			assert(_header.allocatedSize >= 0);
+			assert(this->_allocatedSize >= 0);
 			
-			if (_header.allocatedSize == 0) {
-				_header.currentOffset = 0;
+			if (this->_allocatedSize == 0) {
+				this->_currentOffset = 0;
 			}
 		}
 		
 		[[nodiscard]]
-		constexpr bool Empty() const noexcept { return _header.allocatedSize == 0; }
+		bool Empty() const noexcept { return this->_allocatedSize == 0; }
 		
 		[[nodiscard]]
-		constexpr MonotonicAllocator* Allocator() const noexcept { return _header.allocator; }
+		MonotonicAllocator* Allocator() const noexcept { return this->_allocator; }
 	
 	private:
-		struct PageHeader {
-			constexpr explicit PageHeader(MonotonicAllocator* allocator_) noexcept
-				: allocator(allocator_)
-			{
-			}
-			
-			MonotonicAllocator* allocator = nullptr;
-			
-			int allocatedSize = 0;
-			uint32_t currentOffset = 0;
-		};
-		
-		PageHeader _header;
-		
 		enum {
-			kAlignFillingBits = alignof(void*) - 1,
-			kDataSizeUnaligned = PageSize - sizeof(PageHeader) - sizeof(std::unique_ptr<Page>) - sizeof(Page*),
-			kDataSize = (kDataSizeUnaligned + kAlignFillingBits) & ~kAlignFillingBits
+			kMaxAlignFillingBits = alignof(std::max_align_t) - 1,
+			kDataSizeUnaligned = PageSize - sizeof(PageHeader<Page>),
+			kDataSize = (kDataSizeUnaligned + kMaxAlignFillingBits) & ~kMaxAlignFillingBits
 		};
 		
 		static_assert(static_cast<int>(kDataSize) > 0);
@@ -186,7 +191,7 @@ private:
 	static_assert(sizeof(Page) == PageSize);
 	
 	[[nodiscard]]
-	static constexpr Page* GetPage(void* p) noexcept {
+	static Page* GetPage(void* p) noexcept {
 		auto header = static_cast<ItemHeader*>(p) - 1;
 		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - header->offset);
 		return page;

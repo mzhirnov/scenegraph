@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <array>
 #include <cstddef>
 
@@ -9,10 +10,16 @@
 template <size_t Size, size_t Align, size_t PageSize>
 class BasicPoolAllocator {
 public:
-	constexpr BasicPoolAllocator() = default;
+	BasicPoolAllocator() = default;
 	
 	[[nodiscard]]
-	constexpr void* Allocate() noexcept {
+	static BasicPoolAllocator* GetAllocator(void* p) noexcept {
+		auto page = GetPage(p);
+		return page->Allocator();
+	}
+	
+	[[nodiscard]]
+	void* Allocate() noexcept {
 		// Try allocate from occupied pages, from newer to older
 		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
 			if (auto p = page->TryAllocate()) {
@@ -43,7 +50,7 @@ public:
 		return p;
 	}
 	
-	constexpr void Deallocate(void* p) noexcept {
+	void Deallocate(void* p) noexcept {
 		// Deallocating nullptr must be ok
 		if (!p) {
 			return;
@@ -73,12 +80,6 @@ public:
 		}
 	}
 	
-	[[nodiscard]]
-	static constexpr BasicPoolAllocator* GetAllocator(void* p) noexcept {
-		auto page = GetPage(p);
-		return page->Allocator();
-	}
-	
 private:
 	class Page {
 	public:
@@ -99,7 +100,7 @@ private:
 			alignas(Align) std::array<std::byte, Size> bytes;
 		};
 		
-		constexpr explicit Page(BasicPoolAllocator* allocator) noexcept
+		explicit Page(BasicPoolAllocator* allocator) noexcept
 			: _allocator(allocator)
 		{
 			// Format page by setting up free list indices
@@ -108,14 +109,14 @@ private:
 			}
 		}
 		
-		constexpr Page(const Page&) = delete;
-		constexpr Page& operator=(const Page&) = delete;
+		Page(const Page&) = delete;
+		Page& operator=(const Page&) = delete;
 		
-		constexpr Page(Page&&) = delete;
-		constexpr Page& operator=(Page&&) = delete;
+		Page(Page&&) = delete;
+		Page& operator=(Page&&) = delete;
 		
-		constexpr ~Page() {
-			assert(_busyCount == 0 && "Destroying items storage with external pointers to it");
+		~Page() {
+			assert(_allocatedCount == 0 && "Destroying items storage with external pointers to it");
 			
 			// Destroy list inplace in the loop instead of auto recursion
 			while (nextPage) {
@@ -124,7 +125,7 @@ private:
 		}
 		
 		[[nodiscard]]
-		constexpr void* TryAllocate() noexcept {
+		void* TryAllocate() noexcept {
 			// The page is full
 			if (_freeListHead >= PageSize) {
 				return nullptr;
@@ -134,16 +135,14 @@ private:
 			auto& storage = _items[_freeListHead];
 			_freeListHead = storage.nextFreeIndex;
 			
-			_busyCount++;
+			_allocatedCount++;
 			
 			auto p = storage.bytes.data();
-			
 			storage.offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
-			
 			return p;
 		}
 		
-		constexpr void Deallocate(void* p) noexcept {
+		void Deallocate(void* p) noexcept {
 			assert(IsOwnPointer(p));
 			
 			// Add item to free list
@@ -152,23 +151,19 @@ private:
 			_freeListHead = GetStorageIndex(storage);
 			
 			assert(_freeListHead <= PageSize);
-			assert(_busyCount > 0);
+			assert(_allocatedCount > 0);
 			
-			_busyCount--;
+			_allocatedCount--;
 		}
 		
 		[[nodiscard]]
-		constexpr bool IsOwnPointer(const void* p) const noexcept {
-			return p >= _items.front().bytes.data() && p <= _items.back().bytes.data();
-		}
+		bool Empty() const noexcept { return _allocatedCount == 0; }
 		
 		[[nodiscard]]
-		constexpr bool Empty() const noexcept { return _busyCount == 0; }
+		BasicPoolAllocator* Allocator() const noexcept { return _allocator; }
 		
 		[[nodiscard]]
-		constexpr BasicPoolAllocator* Allocator() const noexcept { return _allocator; }
-		
-		static constexpr ItemStorage* StorageFromPointer(void* p) {
+		static ItemStorage* StorageFromPointer(void* p) {
 			return static_cast<ItemStorage*>(
 				static_cast<void*>(
 					static_cast<std::byte*>(p) -
@@ -176,19 +171,25 @@ private:
 		}
 		
 	private:
-		constexpr IndexType GetStorageIndex(const ItemStorage* p) const noexcept {
-			return static_cast<IndexType>(p - static_cast<const ItemStorage*>(static_cast<const void*>(_items.data())));
+		[[nodiscard]]
+		bool IsOwnPointer(const void* p) const noexcept {
+			return p >= _items.front().bytes.data() && p <= _items.back().bytes.data();
+		}
+		
+		[[nodiscard]]
+		IndexType GetStorageIndex(const ItemStorage* p) const noexcept {
+			return static_cast<IndexType>(p - _items.data());
 		}
 		
 	private:
 		BasicPoolAllocator* _allocator = nullptr;
-		std::array<ItemStorage, PageSize> _items;
 		IndexType _freeListHead = 0;
-		IndexType _busyCount = 0;
+		IndexType _allocatedCount = 0;
+		std::array<ItemStorage, PageSize> _items;
 	};
 	
 	[[nodiscard]]
-	static constexpr Page* GetPage(void* p) noexcept {
+	static Page* GetPage(void* p) noexcept {
 		auto storage = Page::StorageFromPointer(p);
 		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - storage->offset);
 		return page;
