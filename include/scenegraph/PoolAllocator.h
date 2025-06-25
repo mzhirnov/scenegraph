@@ -7,7 +7,7 @@
 ///
 /// Free list paged pool allocator
 ///
-template <size_t Size, size_t Align, size_t PageSize>
+template <size_t Size, size_t Align, size_t PageItems>
 class BasicPoolAllocator {
 public:
 	BasicPoolAllocator() = default;
@@ -61,7 +61,7 @@ public:
 		page->Deallocate(p);
 		
 		// If deallocated from extra page and the page got empty, move it to free list
-		if (page->prevPage != page && page->Empty()) {
+		if (!page->Single() && page->Empty()) {
 			if (page->nextPage) {
 				page->nextPage->prevPage = page->prevPage;
 			}
@@ -80,12 +80,14 @@ public:
 		}
 	}
 	
+	void DisposeFreePages() noexcept { _firstFreePage.reset(); }
+	
 private:
 	class Page {
 	public:
 		using IndexType = uint16_t;
 		
-		static_assert(std::numeric_limits<IndexType>::max() >= PageSize);
+		static_assert(std::numeric_limits<IndexType>::max() >= PageItems);
 		static_assert(sizeof(IndexType) <= Size);
 		
 		// Public fields
@@ -104,7 +106,7 @@ private:
 			: _allocator(allocator)
 		{
 			// Format page by setting up free list indices
-			for (size_t i = 0; i < PageSize; ++i) {
+			for (size_t i = 0; i < PageItems; ++i) {
 				_items[i].nextFreeIndex = static_cast<IndexType>(i + 1);
 			}
 		}
@@ -127,7 +129,7 @@ private:
 		[[nodiscard]]
 		void* TryAllocate() noexcept {
 			// The page is full
-			if (_freeListHead >= PageSize) {
+			if (_freeListHead >= PageItems) {
 				return nullptr;
 			}
 			
@@ -150,7 +152,7 @@ private:
 			storage->nextFreeIndex = _freeListHead;
 			_freeListHead = GetStorageIndex(storage);
 			
-			assert(_freeListHead <= PageSize);
+			assert(_freeListHead <= PageItems);
 			assert(_allocatedCount > 0);
 			
 			_allocatedCount--;
@@ -158,6 +160,9 @@ private:
 		
 		[[nodiscard]]
 		bool Empty() const noexcept { return _allocatedCount == 0; }
+		
+		[[nodiscard]]
+		bool Single() const noexcept { return prevPage == this; }
 		
 		[[nodiscard]]
 		BasicPoolAllocator* Allocator() const noexcept { return _allocator; }
@@ -185,7 +190,7 @@ private:
 		BasicPoolAllocator* _allocator = nullptr;
 		IndexType _freeListHead = 0;
 		IndexType _allocatedCount = 0;
-		std::array<ItemStorage, PageSize> _items;
+		std::array<ItemStorage, PageItems> _items;
 	};
 	
 	[[nodiscard]]

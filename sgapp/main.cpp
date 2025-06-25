@@ -115,6 +115,7 @@ AutoObject::~AutoObject() { puts(".dtor"); }
 int AutoObject::Value() const { return _impl->i; }
 
 int main() {
+	auto scene = std::make_unique<Scene>();
 	SceneObject sceneObject;
 	HelloComponent c1;
 	WorldComponent c2;

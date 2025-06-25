@@ -120,7 +120,7 @@ BENCHMARK(BM_PoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 static void BM_MonotonicAllocator(benchmark::State& state) {
 	const auto size = state.range();
 	std::vector<Node*> nodes(static_cast<size_t>(size));
-	MonotonicAllocator<65536> allocator;
+	MonotonicAllocator<16384> allocator;
 	
 	for (auto _ : state) {
 		for (auto& node : nodes) {

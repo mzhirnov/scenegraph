@@ -7,7 +7,7 @@
 ///
 /// Monotonic paged allocator
 ///
-template <size_t PageSize>
+template <size_t PageBytes>
 class MonotonicAllocator {
 public:
 	MonotonicAllocator() = default;
@@ -66,7 +66,7 @@ public:
 		page->Deallocate(size);
 		
 		// If deallocated from extra page and the page got empty, move it to free list
-		if (page->prevPage != page && page->Empty()) {
+		if (!page->Single() && page->Empty()) {
 			if (page->nextPage) {
 				page->nextPage->prevPage = page->prevPage;
 			}
@@ -85,8 +85,14 @@ public:
 		}
 	}
 	
+	void DisposeFreePages() noexcept { _firstFreePage.reset(); }
+	
 private:
 	struct ItemHeader {
+#ifndef NDEBUG
+		static constexpr uint32_t kSignature = 0xaaaa5555;
+		uint32_t signature = kSignature;
+#endif
 		uint32_t offset;
 	};
 	
@@ -133,7 +139,7 @@ private:
 			const auto headerAlignMask = alignof(ItemHeader) - 1;
 			const auto blockAlignMask = align - 1;
 			
-			// Total allocation block begins here
+			// Allocated block begins here
 			const auto baseOffset = this->_currentOffset;
 			
 			// Aligned header
@@ -150,10 +156,10 @@ private:
 			}
 			
 			auto p = _bytes.data() + blockOffset;
-			auto header = std::launder(reinterpret_cast<ItemHeader*>(p) - 1);
+			auto header = std::construct_at(reinterpret_cast<ItemHeader*>(p) - 1);
 			
 			// Offset from allocated block to page start
-			header->offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
+			header->offset = static_cast<decltype(ItemHeader::offset)>(p - reinterpret_cast<std::byte*>(this));
 			
 			this->_allocatedSize += static_cast<int>(size);
 			
@@ -174,12 +180,15 @@ private:
 		bool Empty() const noexcept { return this->_allocatedSize == 0; }
 		
 		[[nodiscard]]
+		bool Single() const noexcept { return this->prevPage == this; }
+		
+		[[nodiscard]]
 		MonotonicAllocator* Allocator() const noexcept { return this->_allocator; }
 	
 	private:
 		enum {
 			kMaxAlignFillingBits = alignof(std::max_align_t) - 1,
-			kDataSizeUnaligned = PageSize - sizeof(PageHeader<Page>),
+			kDataSizeUnaligned = PageBytes - sizeof(PageHeader<Page>),
 			kDataSize = (kDataSizeUnaligned + kMaxAlignFillingBits) & ~kMaxAlignFillingBits
 		};
 		
@@ -188,11 +197,12 @@ private:
 		std::array<std::byte, kDataSize> _bytes;
 	};
 	
-	static_assert(sizeof(Page) == PageSize);
+	static_assert(sizeof(Page) == PageBytes);
 	
 	[[nodiscard]]
 	static Page* GetPage(void* p) noexcept {
 		auto header = static_cast<ItemHeader*>(p) - 1;
+		assert(header->signature == ItemHeader::kSignature);
 		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - header->offset);
 		return page;
 	}
