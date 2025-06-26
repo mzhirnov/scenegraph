@@ -1,10 +1,9 @@
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-file(GLOB
+file(GLOB_RECURSE
   SOURCE_FILES
-    *.cpp
-    ${PROJECT_SOURCE_DIR}/include/scenegraph/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+    ${PROJECT_SOURCE_DIR}/src/scenegraph/*.cpp
+    ${PROJECT_SOURCE_DIR}/include/scenegraph/*.h)
 
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 
