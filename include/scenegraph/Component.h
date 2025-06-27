@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/ForwardList.h>
+#include <scenegraph/linked/ForwardList.h>
 #include <scenegraph/SceneEntity.h>
 
 #include <type_traits>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/MonotonicAllocator.h>
+#include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/SceneObject.h>
 
 #include <memory>

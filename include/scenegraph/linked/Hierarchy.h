@@ -1,5 +1,8 @@
 #pragma once
 
+#include <type_traits>
+#include <memory>
+
 enum class EnumDirection {
 	FirstToLast,
 	LastToFirst
@@ -22,6 +25,7 @@ constexpr EnumCallOrder operator|(EnumCallOrder lhs, EnumCallOrder rhs) noexcept
 		static_cast<std::underlying_type_t<EnumCallOrder>>(rhs));
 }
 
+//	USAGE:
 //
 //	class Node : public Hierarchy<Node> {
 //	};
@@ -38,7 +42,7 @@ public:
 	Hierarchy() noexcept = default;
 	
 	Hierarchy(const Hierarchy&) noexcept = default;
-	Hierarchy& operator=(const Hierarchy&) noexcept;
+	Hierarchy& operator=(const Hierarchy&) noexcept { return *this; }
 	
 	Hierarchy(Hierarchy&&) noexcept;
 	Hierarchy& operator=(Hierarchy&&) noexcept;
@@ -48,8 +52,8 @@ public:
 	// N a v i g a t i o n
 	
 	NodeType* GetParentNode() const noexcept;
-	NodeType* GetPrevSiblingNode() const noexcept;
 	NodeType* GetNextSiblingNode() const noexcept;
+	NodeType* GetPrevSiblingNode() const noexcept;
 	NodeType* GetFirstChildNode() const noexcept;
 	NodeType* GetLastChildNode() const noexcept;
 	NodeType* GetChildNodeAt(int index) const noexcept;
@@ -85,21 +89,6 @@ private:
 	std::unique_ptr<NodeType> _nextSiblingNode;
 	std::unique_ptr<NodeType> _firstChildNode;
 };
-
-//template <typename NodeType>
-//Hierarchy<NodeType>::Hierarchy() noexcept {
-//	_prevSiblingNode = static_cast<NodeType*>(this);
-//}
-//
-//template <typename NodeType>
-//Hierarchy<NodeType>::Hierarchy(const Hierarchy& rhs) noexcept {
-//	_prevSiblingNode = static_cast<NodeType*>(this);
-//}
-
-template <typename NodeType>
-Hierarchy<NodeType>& Hierarchy<NodeType>::operator=(const Hierarchy& rhs) noexcept {
-	return *this;
-}
 
 template <typename NodeType>
 Hierarchy<NodeType>::Hierarchy(Hierarchy&& rhs) noexcept
@@ -140,7 +129,7 @@ Hierarchy<NodeType>& Hierarchy<NodeType>::operator=(Hierarchy&& rhs) noexcept {
 template <typename NodeType>
 Hierarchy<NodeType>::~Hierarchy() {
 	EnumChildNodes(EnumDirection::LastToFirst, EnumCallOrder::PostOrder,
-		[](EnumCallOrder callOrder, NodeType* currentNode, bool& stop, void* context) {
+		[](EnumCallOrder, NodeType* currentNode, bool&, void*) {
 			currentNode->RemoveAllChildNodes();
 		}, nullptr);
 
@@ -248,8 +237,8 @@ bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder 
 		&Hierarchy::GetLastChildNode;
 	
 	GetNodeMemFn GetNextSiblingNode = (direction == EnumDirection::FirstToLast) ?
-		(GetNodeMemFn)&Hierarchy::GetNextSiblingNode :
-		(GetNodeMemFn)&Hierarchy::GetPrevSiblingNode;
+		static_cast<GetNodeMemFn>(&Hierarchy::GetNextSiblingNode) :
+		static_cast<GetNodeMemFn>(&Hierarchy::GetPrevSiblingNode);
 	
 	auto stop = false;
 	auto currentNode = (this->*GetFirstChildNode)();

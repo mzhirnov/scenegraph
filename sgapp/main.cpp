@@ -1,8 +1,8 @@
 #include <scenegraph/Scene.h>
-#include <scenegraph/PoolAllocator.h>
-#include <scenegraph/MonotonicAllocator.h>
-#include <scenegraph/StaticImpl.h>
-#include <scenegraph/ScopeGuard.h>
+#include <scenegraph/memory/PoolAllocator.h>
+#include <scenegraph/memory/MonotonicAllocator.h>
+#include <scenegraph/utils/StaticImpl.h>
+#include <scenegraph/utils/ScopeGuard.h>
 
 #include <iostream>
 #include <cstdio>

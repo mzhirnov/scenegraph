@@ -45,12 +45,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo MinSizeRel)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
 
-file(GLOB
-  SOURCE_FILES
-    *.cpp
-    ${PROJECT_SOURCE_DIR}/include/scenegraph/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-
 # Set up directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 

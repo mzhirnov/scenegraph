@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
-#include <scenegraph/ForwardList.h>
-#include <scenegraph/Hierarchy.h>
-#include <scenegraph/PoolAllocator.h>
-#include <scenegraph/MonotonicAllocator.h>
+
+#include <scenegraph/linked/ForwardList.h>
+#include <scenegraph/linked/Hierarchy.h>
+#include <scenegraph/memory/PoolAllocator.h>
+#include <scenegraph/memory/MonotonicAllocator.h>
+
 #include <string>
 
 class node : public ForwardListNode<> {

@@ -1,8 +1,8 @@
 #include <benchmark/benchmark.h>
 
-#include <scenegraph/ForwardList.h>
-#include <scenegraph/PoolAllocator.h>
-#include <scenegraph/MonotonicAllocator.h>
+#include <scenegraph/linked/ForwardList.h>
+#include <scenegraph/memory/PoolAllocator.h>
+#include <scenegraph/memory/MonotonicAllocator.h>
 
 #include <vector>
 

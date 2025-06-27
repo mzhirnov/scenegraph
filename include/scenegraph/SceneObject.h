@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/Hierarchy.h>
+#include <scenegraph/linked/Hierarchy.h>
 #include <scenegraph/SceneEntity.h>
 #include <scenegraph/Component.h>
 
