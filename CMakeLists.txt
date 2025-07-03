@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(scenegraph LANGUAGES CXX)
-
 # Disable in-source builds to prevent source tree corruption.
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 	message(FATAL_ERROR "FATAL: In-source builds are not allowed.\nYou should create a separate directory for build files.")
 endif()
+
+project(scenegraph LANGUAGES CXX)
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)

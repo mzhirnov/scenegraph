@@ -1,8 +1,9 @@
-include_directories(${PROJECT_SOURCE_DIR}/src)
+#include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB_RECURSE
   SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/src/scenegraph/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/scenegraph/*.h
     ${PROJECT_SOURCE_DIR}/include/scenegraph/*.h)
 
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SOURCE_FILES})
