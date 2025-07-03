@@ -1,15 +1,19 @@
 #include <scenegraph/Scene.h>
+#include <scenegraph/Component.h>
 #include <scenegraph/memory/PoolAllocator.h>
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/utils/ScopeGuard.h>
+#include <scenegraph/utils/MurmurHash.h>
+#include <scenegraph/utils/BitUtils.h>
 
 #include <iostream>
 #include <cstdio>
 
 class HelloComponent : public ComponentImpl<HelloComponent> {
 public:
-	HelloComponent() = default;
+	HelloComponent() { puts("HelloComponent()"); }
+	~HelloComponent() { puts("~HelloComponent()"); }
 	
 private:
 	friend class ComponentImpl<HelloComponent>;
@@ -30,7 +34,8 @@ private:
 
 class WorldComponent : public ComponentImpl<WorldComponent> {
 public:
-	WorldComponent() = default;
+	WorldComponent() { puts("WorldComponent()"); }
+	~WorldComponent() { puts("~WorldComponent()"); }
 	
 private:
 	friend class ComponentImpl<WorldComponent>;
@@ -51,7 +56,8 @@ private:
 
 class ExclamationComponent : public ComponentImpl<ExclamationComponent> {
 public:
-	ExclamationComponent() = default;
+	ExclamationComponent() { puts("ExclamationComponent()"); }
+	~ExclamationComponent() { puts("~ExclamationComponent()"); }
 	
 private:
 	friend class ComponentImpl<ExclamationComponent>;
@@ -79,7 +85,9 @@ public:
 	
 private:
 	struct Impl;
-	StaticImpl<Impl, 4, alignof(int)> _impl;
+	enum { kImplSize = 4, kImplAlign = alignof(int) };
+	
+	StaticImpl<Impl, kImplSize, kImplAlign> _impl;
 };
 
 struct AutoObject::Impl {
@@ -96,20 +104,33 @@ AutoObject::~AutoObject() { puts(".dtor"); }
 int AutoObject::Value() const { return _impl->i; }
 
 int main() {
-	auto scene = std::make_unique<Scene>();
-	SceneObject sceneObject;
-	HelloComponent c1;
-	WorldComponent c2;
-	ExclamationComponent c3;
+	enum { kHello = Murmur3Hash32("Hello") };
 	
-	sceneObject.AddComponent(c1);
-	sceneObject.AddComponent(c2);
-	sceneObject.AddComponent(c3);
+	constexpr auto kHello128 = ToByteArray(Murmur3Hash128("Hello"));
+	
+	enum { kHello128a = static_cast<uint32_t>(ToByteArray(Murmur3Hash128("Hello"))[0]) };
+	
+	std::cout << "Hello32: " << std::hex << kHello << '\n';
+	std::cout << "Hello128: " << std::hex;
+	for (auto d : kHello128) {
+		std::cout << static_cast<uint32_t>(d);
+	}
+	std::cout << std::dec << '\n';
+
+	auto scene = std::make_unique<Scene>();
+	//Scene scene;
+	auto sceneObject = scene->AddObject();
+	Component* hello = sceneObject.AddComponent(HelloComponent::Make(scene.get()));
+	sceneObject.AddComponent<WorldComponent>();
+	sceneObject.AddComponent<ExclamationComponent>();
+	
+	std::cout << HelloComponent::StaticType().name() << '\n';
+	std::cout << hello->Type().name() << '\n';
 
 	puts("---");
-	sceneObject.Update();
+	sceneObject.BroadcastMessage(Message::Apply);
 	puts("---");
-	sceneObject.Update();
+	sceneObject.BroadcastMessage(Message::Apply);
 	
 	{
 		PoolAllocator<AutoObject, 2> allocator;
