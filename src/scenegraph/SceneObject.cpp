@@ -12,6 +12,11 @@ Scene* SceneObject::GetScene() noexcept {
 
 Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexcept {
 	assert(_node);
+	assert(component);
+	
+	if (!_node || !component) {
+		return nullptr;
+	}
 	
 	_node->AddComponent(*component);
 	
@@ -22,7 +27,7 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 
 // FindComponent
 
-void SceneObject::BroadcastMessage(Message message) noexcept {
+void SceneObject::SendMessage(Message message) noexcept {
 	if (!_node) {
 		return;
 	}

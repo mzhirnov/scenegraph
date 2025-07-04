@@ -21,8 +21,6 @@ class Component : public ForwardListNode<>, public SceneEntity {
 public:
 	virtual ~Component() = default;
 	
-	const std::type_info& Type() const noexcept { return typeid(*this); }
-	
 	template <typename T, typename = std::enable_if_t<std::is_base_of_v<Component, T>>>
 	void DispatchMessagesTo(void (T::*mf)(Message, SceneObject*) noexcept) noexcept
 		{ _dispatchMemFn = static_cast<DispatchMemFn>(mf); }
@@ -49,8 +47,7 @@ private:
 template <typename T>
 class ComponentImpl : public Component {
 public:
-	static constexpr const std::type_info& StaticType() noexcept { return typeid(T); }
-	static std::unique_ptr<T> Make(Scene* scene) noexcept;
+	static std::unique_ptr<Component> Make(Scene* scene) noexcept;
 	
 	ComponentImpl() noexcept
 	{
@@ -98,8 +95,8 @@ public:
 				++it;
 			}
 			else {
-				component.SendMessage(Message::Removed, sceneObject);
 				it = Erase(it);
+				component.SendMessage(Message::Removed, sceneObject);
 				delete std::addressof(component);
 			}
 		}

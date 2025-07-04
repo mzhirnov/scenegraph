@@ -1,5 +1,6 @@
 #include <scenegraph/Scene.h>
 #include <scenegraph/Component.h>
+#include <scenegraph/ComponentFactory.h>
 #include <scenegraph/memory/PoolAllocator.h>
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
@@ -18,17 +19,12 @@ public:
 private:
 	friend class ComponentImpl<HelloComponent>;
 	
-	void Added(SceneObject*) noexcept {
-		puts("Added Hello");
-	}
-	
-	void Removed(SceneObject*) noexcept {
-		puts("Removed Hello");
-	}
+	void Added(SceneObject*) noexcept { puts("+ Added HelloComponent"); }
+	void Removed(SceneObject*) noexcept { puts("- Removed HelloComponent"); }
 	
 	void Apply(SceneObject*) noexcept {
 		puts("Hello");
-		//Invalidate();
+		//Remove();
 	}
 };
 
@@ -40,17 +36,12 @@ public:
 private:
 	friend class ComponentImpl<WorldComponent>;
 	
-	void Added(SceneObject*) noexcept {
-		puts("Added World");
-	}
-	
-	void Removed(SceneObject*) noexcept {
-		puts("Removed World");
-	}
+	void Added(SceneObject*) noexcept { puts("+ Added WorldComponent"); }
+	void Removed(SceneObject*) noexcept { puts("- Removed WorldComponent"); }
 	
 	void Apply(SceneObject*) noexcept {
 		puts("World");
-		//Invalidate();
+		//Remove();
 	}
 };
 
@@ -62,13 +53,8 @@ public:
 private:
 	friend class ComponentImpl<ExclamationComponent>;
 	
-	void Added(SceneObject*) noexcept {
-		puts("Added Exclamation");
-	}
-	
-	void Removed(SceneObject*) noexcept {
-		puts("Removed Exclamation");
-	}
+	void Added(SceneObject*) noexcept { puts("+ Added ExclamationComponent"); }
+	void Removed(SceneObject*) noexcept { puts("- Removed ExclamationComponent"); }
 	
 	void Apply(SceneObject*) noexcept {
 		puts("!");
@@ -116,21 +102,24 @@ int main() {
 		std::cout << static_cast<uint32_t>(d);
 	}
 	std::cout << std::dec << '\n';
+	
+	ComponentFactory factory;
+	
+	factory.Register("Hello", HelloComponent::Make);
+	factory.Register("World", WorldComponent::Make);
+	factory.Register("Exclamation", ExclamationComponent::Make);
 
 	auto scene = std::make_unique<Scene>();
 	//Scene scene;
 	auto sceneObject = scene->AddObject();
-	Component* hello = sceneObject.AddComponent(HelloComponent::Make(scene.get()));
-	sceneObject.AddComponent<WorldComponent>();
+	sceneObject.AddComponent(HelloComponent::Make(scene.get()));
+	sceneObject.AddComponent(factory.MakeComponent("World", scene.get()));
 	sceneObject.AddComponent<ExclamationComponent>();
 	
-	std::cout << HelloComponent::StaticType().name() << '\n';
-	std::cout << hello->Type().name() << '\n';
-
 	puts("---");
-	sceneObject.BroadcastMessage(Message::Apply);
+	sceneObject.SendMessage(Message::Apply);
 	puts("---");
-	sceneObject.BroadcastMessage(Message::Apply);
+	sceneObject.SendMessage(Message::Apply);
 	
 	{
 		PoolAllocator<AutoObject, 2> allocator;

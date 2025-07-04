@@ -39,7 +39,7 @@ public:
 
 	// T* FindComponent<T>() noexcept
 	
-	void BroadcastMessage(Message message) noexcept;
+	void SendMessage(Message message) noexcept;
 
 private:
 	SceneNode* _node = nullptr;
