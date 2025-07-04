@@ -6,7 +6,7 @@
 class SceneNode;
 class Component;
 
-enum class Message;
+enum class ComponentMessage;
 
 ///
 /// Scene object is a building block of scene hierarchy
@@ -34,12 +34,12 @@ public:
 	
 	Component* AddComponent(std::unique_ptr<Component> component) noexcept;
 	
-	template <typename T, typename = std::enable_if_t<std::is_base_of_v<Component, T>>>
+	template <typename T>
 	T* AddComponent() noexcept;
 
 	// T* FindComponent<T>() noexcept
 	
-	void SendMessage(Message message) noexcept;
+	void SendMessage(ComponentMessage message) noexcept;
 
 private:
 	SceneNode* _node = nullptr;

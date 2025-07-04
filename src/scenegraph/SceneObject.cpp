@@ -20,19 +20,21 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 	
 	_node->AddComponent(*component);
 	
-	component->SendMessage(Message::Added, this);
+	ComponentMessageParams params { this };
+	component->SendMessage(ComponentMessage::Added, params);
 	
 	return component.release();
 }
 
 // FindComponent
 
-void SceneObject::SendMessage(Message message) noexcept {
+void SceneObject::SendMessage(ComponentMessage message) noexcept {
 	if (!_node) {
 		return;
 	}
 	
 	auto& components = _node->GetComponents();
 	
-	components.BroadcastMessage(message, this);
+	ComponentMessageParams params { this };
+	components.BroadcastMessage(message, params);
 }

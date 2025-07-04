@@ -16,9 +16,7 @@ public:
 	SceneNode(const SceneNode&) = delete;
 	SceneNode& operator=(const SceneNode&) = delete;
 	
-	void AddComponent(Component& c) noexcept { _components.Add(c); }
-	
-	// T* FindComponent<T>() noexcept
+	void AddComponent(Component& c) noexcept { _components.PushBack(c); }
 	
 	ComponentList& GetComponents() noexcept { return _components; }
 	
@@ -26,6 +24,4 @@ private:
 	friend class Hierarchy<SceneNode>;
 	
 	ComponentList _components;
-	//BehaviorList _behaviors;
-	//AttributeList _attributes;
 };

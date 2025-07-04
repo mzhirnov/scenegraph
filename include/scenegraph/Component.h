@@ -8,10 +8,14 @@
 
 class SceneObject;
 
-enum class Message {
+enum class ComponentMessage {
 	Added,
 	Removed,
 	Apply
+};
+
+struct ComponentMessageParams {
+	SceneObject* sceneObject;
 };
 
 ///
@@ -22,19 +26,20 @@ public:
 	virtual ~Component() = default;
 	
 	template <typename T, typename = std::enable_if_t<std::is_base_of_v<Component, T>>>
-	void DispatchMessagesTo(void (T::*mf)(Message, SceneObject*) noexcept) noexcept
+	void DispatchMessagesTo(void (T::*mf)(ComponentMessage, ComponentMessageParams& params) noexcept) noexcept
 		{ _dispatchMemFn = static_cast<DispatchMemFn>(mf); }
 	
-	void SendMessage(Message message, SceneObject* sceneObject) noexcept
-		{ std::invoke(_dispatchMemFn, this, message, sceneObject); }
+	void SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept
+		{ std::invoke(_dispatchMemFn, this, message, params); }
 
 	void Remove() noexcept { _removed = true; }
 	bool Removed() const noexcept { return _removed; }
 	
-	void DefaultDispatchMessage(Message, SceneObject*) noexcept {}
+protected:
+	void DefaultDispatchMessage(ComponentMessage, ComponentMessageParams&) noexcept {}
 
 private:
-	using DispatchMemFn = void (Component::*)(Message, SceneObject*) noexcept;
+	using DispatchMemFn = void (Component::*)(ComponentMessage, ComponentMessageParams&) noexcept;
 
 	DispatchMemFn _dispatchMemFn = &Component::DefaultDispatchMessage;
 	
@@ -55,19 +60,19 @@ public:
 	}
 
 private:
-	void DispatchMessage(Message message, SceneObject* sceneObject) noexcept {
+	void DispatchMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 		switch (message) {
-		case Message::Added:
-			Derived()->Added(sceneObject);
+		case ComponentMessage::Added:
+			Derived()->Added(params.sceneObject);
 			break;
-		case Message::Removed:
-			Derived()->Removed(sceneObject);
+		case ComponentMessage::Removed:
+			Derived()->Removed(params.sceneObject);
 			break;
-		case Message::Apply:
-			Derived()->Apply(sceneObject);
+		case ComponentMessage::Apply:
+			Derived()->Apply(params.sceneObject);
 			break;
 		default:
-			DefaultDispatchMessage(message, sceneObject);
+			DefaultDispatchMessage(message, params);
 			break;
 		}
 	}
@@ -84,21 +89,5 @@ private:
 ///
 class ComponentList : public CircularForwardList<Component> {
 public:
-	void Add(Component& c) {
-		PushBack(c);
-	}
-	
-	void BroadcastMessage(Message message, SceneObject* sceneObject) noexcept {
-		for (auto it = begin(), e = end(); it != e; /**/) {
-			if (auto& component = *it; !component.Removed()) {
-				component.SendMessage(message, sceneObject);
-				++it;
-			}
-			else {
-				it = Erase(it);
-				component.SendMessage(Message::Removed, sceneObject);
-				delete std::addressof(component);
-			}
-		}
-	}
+	void BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
 };

@@ -117,9 +117,9 @@ int main() {
 	sceneObject.AddComponent<ExclamationComponent>();
 	
 	puts("---");
-	sceneObject.SendMessage(Message::Apply);
+	sceneObject.SendMessage(ComponentMessage::Apply);
 	puts("---");
-	sceneObject.SendMessage(Message::Apply);
+	sceneObject.SendMessage(ComponentMessage::Apply);
 	
 	{
 		PoolAllocator<AutoObject, 2> allocator;

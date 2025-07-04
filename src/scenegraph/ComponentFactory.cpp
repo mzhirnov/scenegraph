@@ -1,11 +1,11 @@
 #include <scenegraph/ComponentFactory.h>
 #include <scenegraph/utils/MurmurHash.h>
 
-void ComponentFactory::Register(std::string_view name, MakerFn maker) {
+void ComponentFactory::Register(std::string_view name, MakerType maker) {
 	Register(Murmur3Hash32(name), maker);
 }
 
-void ComponentFactory::Register(HashType hashedName, MakerFn maker) {
+void ComponentFactory::Register(HashType hashedName, MakerType maker) {
 #ifndef NDEBUG
 	bool duplicateFound = false;
 	for (auto& [hash, _] : _makers) {

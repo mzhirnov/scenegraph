@@ -40,7 +40,7 @@ private:
 
 template <typename T, typename... Args>
 std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
-	static_assert(sizeof(T), "Type is not complete");
+	static_assert(sizeof(T) > 0, "Type is not complete");
 	static_assert(std::is_base_of_v<SceneEntity, T>);
 	
 	return std::unique_ptr<T>(std::construct_at(Allocate<T>(), std::forward<Args>(args)...));
@@ -48,8 +48,10 @@ std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
 
 //---------------------------------------------------------------------------------------------------------------------
 
-template <typename T, typename>
+template <typename T>
 T* SceneObject::AddComponent() noexcept {
+	static_assert(std::is_base_of_v<Component, T>);
+	
 	if (auto scene = GetScene()) {
 		return static_cast<T*>(AddComponent(scene->NewEntity<T>(Scene::Passkey{})));
 	}
