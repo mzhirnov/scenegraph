@@ -18,7 +18,6 @@ public:
 	explicit SceneObject(SceneNode* node) noexcept
 		: _node(node)
 	{
-		assert(node);
 	}
 
 	SceneObject(const SceneObject&) = delete;
@@ -29,6 +28,23 @@ public:
 	
 	bool operator!() const noexcept { return !_node; }
 	explicit operator bool() const noexcept { return _node != nullptr; }
+	
+	SceneObject Parent() const noexcept;
+	SceneObject FirstChild() const noexcept;
+	SceneObject LastChild() const noexcept;
+	SceneObject ChildNodeAt(int pos) const noexcept;
+	SceneObject NextSibling() const noexcept;
+	SceneObject PrevSibling() const noexcept;
+	
+	SceneObject AppendChild() noexcept;
+	SceneObject PrependChild() noexcept;
+	SceneObject InsertChildAt(int pos) noexcept;
+	SceneObject InsertAfter() noexcept;
+	SceneObject InsertBefore() noexcept;
+	
+	void RemoveChildAt(int pos) noexcept;
+	void RemoveChildren() noexcept;
+	void RemoveFromParent() noexcept;
 	
 	Scene* GetScene() noexcept;
 	

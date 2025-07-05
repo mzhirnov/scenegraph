@@ -2,6 +2,7 @@
 
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/Passkey.h>
+#include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/SceneObject.h>
 #include <scenegraph/Component.h>
 
@@ -33,7 +34,7 @@ public:
 	std::unique_ptr<T> NewEntity(Passkey, Args&&... args) noexcept;
 	
 private:
-	std::unique_ptr<SceneNode> _root;
+	StaticImpl<SceneNode, 5 * sizeof(void*), alignof(void*)> _root;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
