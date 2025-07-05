@@ -12,11 +12,12 @@ public:
 	
 	template <typename... Args>
 	constexpr StaticImpl(Args&&... args) noexcept(noexcept(T{std::forward<Args>(args)...})) {
-		static_assert(Size == sizeof(T));
+		static_assert(sizeof(T) == Size);
 		std::construct_at(reinterpret_cast<T*>(_storage.data()), std::forward<Args>(args)...);
 	}
 	
-	constexpr ~StaticImpl() noexcept(noexcept(std::declval<T>().~T())) {
+	constexpr ~StaticImpl() {
+		static_assert(sizeof(T) == Size);
 		std::destroy_at(reinterpret_cast<T*>(_storage.data()));
 	}
 	

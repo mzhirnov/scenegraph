@@ -409,7 +409,7 @@ std::unique_ptr<NodeType> Hierarchy<NodeType>::RemoveFromParent() noexcept {
 template <typename NodeType>
 void Hierarchy<NodeType>::RemoveAllChildNodes() noexcept {
 	for (auto child = GetLastChildNode(); child; child = child->GetPrevSiblingNode()) {
-		child->RemoveFromParent();
+		RemoveNode(child);
 	}
 	_firstChildNode = nullptr;
 }

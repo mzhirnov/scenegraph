@@ -70,44 +70,31 @@ public:
 	int Value() const;
 	
 private:
-	struct Impl;
+	struct Implementation;
 	enum { kImplSize = 4, kImplAlign = alignof(int) };
 	
-	StaticImpl<Impl, kImplSize, kImplAlign> _impl;
+	StaticImpl<Implementation, kImplSize, kImplAlign> _impl;
 };
 
-struct AutoObject::Impl {
+struct AutoObject::Implementation {
 	int i = 42;
 	
-	Impl() = default;
-	explicit Impl(int n) noexcept : i(n) {}
-	~Impl() = default;
+	Implementation() { puts("Implementation()"); }
+	explicit Implementation(int n) noexcept : i(n) { puts("Implementation(n)"); }
+	~Implementation() { puts("~Implementation()"); }
 };
 
-AutoObject::AutoObject() : _impl(43) { puts(".ctor"); }
-AutoObject::~AutoObject() { puts(".dtor"); }
+AutoObject::AutoObject() : _impl(43) { puts("AutoObject()"); }
+AutoObject::~AutoObject() { puts("~AutoObject()"); }
 
 int AutoObject::Value() const { return _impl->i; }
 
 int main() {
-	enum { kHello = Murmur3Hash32("Hello") };
-	
-	constexpr auto kHello128 = ToByteArray(Murmur3Hash128("Hello"));
-	
-	enum { kHello128a = static_cast<uint32_t>(ToByteArray(Murmur3Hash128("Hello"))[0]) };
-	
-	std::cout << "Hello32: " << std::hex << kHello << '\n';
-	std::cout << "Hello128: " << std::hex;
-	for (auto d : kHello128) {
-		std::cout << static_cast<uint32_t>(d);
-	}
-	std::cout << std::dec << '\n';
-	
 	ComponentFactory factory;
 	
-	factory.Register("Hello", HelloComponent::Make);
-	factory.Register("World", WorldComponent::Make);
-	factory.Register("Exclamation", ExclamationComponent::Make);
+	factory.Register(ComponentFactory::HashName("Hello"), HelloComponent::Make);
+	factory.Register(ComponentFactory::HashName("World"), WorldComponent::Make);
+	factory.Register(ComponentFactory::HashName("Exclamation"), ExclamationComponent::Make);
 
 	auto scene = std::make_unique<Scene>();
 	//Scene scene;

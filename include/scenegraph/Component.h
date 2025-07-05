@@ -53,12 +53,13 @@ template <typename T>
 class ComponentImpl : public Component {
 public:
 	static std::unique_ptr<Component> Make(Scene* scene) noexcept;
-	
+
+protected:
 	ComponentImpl() noexcept
 	{
 		DispatchMessagesTo(&ComponentImpl::DispatchMessage);
 	}
-
+	
 private:
 	void DispatchMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 		switch (message) {
