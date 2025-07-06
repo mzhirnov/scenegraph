@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <memory>
+#include <functional>
 
 enum class EnumDirection {
 	FirstToLast,
@@ -227,18 +228,17 @@ template <typename NodeType>
 bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept {
 	assert(callback != nullptr);
 	
-	if (!callback)
+	if (!callback) {
 		return false;
+	}
 	
-	using GetNodeMemFn = NodeType* (Hierarchy::*)() const;
-	
-	GetNodeMemFn GetFirstChildNode = (direction == EnumDirection::FirstToLast) ?
+	auto GetFirstChildNode = (direction == EnumDirection::FirstToLast) ?
 		&Hierarchy::GetFirstChildNode :
 		&Hierarchy::GetLastChildNode;
 	
-	GetNodeMemFn GetNextSiblingNode = (direction == EnumDirection::FirstToLast) ?
-		static_cast<GetNodeMemFn>(&Hierarchy::GetNextSiblingNode) :
-		static_cast<GetNodeMemFn>(&Hierarchy::GetPrevSiblingNode);
+	auto GetNextSiblingNode = (direction == EnumDirection::FirstToLast) ?
+		&Hierarchy::GetNextSiblingNode :
+		&Hierarchy::GetPrevSiblingNode;
 	
 	auto stop = false;
 	auto currentNode = (this->*GetFirstChildNode)();
@@ -290,7 +290,7 @@ template <typename Handler, typename>
 bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept {
 	return EnumChildNodes(direction, callOrder,
 		[](EnumCallOrder callOrder, NodeType* currentNode, bool& stop, void* context) {
-			(*static_cast<Handler*>(context))(callOrder, currentNode, stop);
+			std::invoke(*static_cast<Handler*>(context), callOrder, currentNode, stop);
 		},
 		std::addressof(handler));
 }
