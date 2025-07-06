@@ -34,6 +34,8 @@ public:
 	std::unique_ptr<T> NewEntity(Passkey, Args&&... args) noexcept;
 	
 private:
+	// In order not to prevent disposing of first allocator's page by persistent root node,
+	// don't use NewEntity and std::unique_ptr here.
 	StaticImpl<SceneNode, 5 * sizeof(void*), alignof(void*)> _root;
 };
 
@@ -51,10 +53,10 @@ std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
 
 template <typename T>
 T* SceneObject::AddComponent() noexcept {
-	static_assert(std::is_base_of_v<Component, T>);
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
 	if (auto scene = GetScene()) {
-		return static_cast<T*>(AddComponent(scene->NewEntity<T>(Scene::Passkey{})));
+		return static_cast<T*>(AddComponent(T::Make(scene)));
 	}
 	
 	return nullptr;

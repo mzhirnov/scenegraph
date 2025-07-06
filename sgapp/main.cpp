@@ -13,6 +13,8 @@
 
 class HelloComponent : public ComponentImpl<HelloComponent> {
 public:
+	DEFINE_COMPONENT_TYPE(HelloComponent)
+	
 	HelloComponent() { puts("HelloComponent()"); }
 	~HelloComponent() { puts("~HelloComponent()"); }
 	
@@ -30,6 +32,8 @@ private:
 
 class WorldComponent : public ComponentImpl<WorldComponent> {
 public:
+	DEFINE_COMPONENT_TYPE(WorldComponent)
+	
 	WorldComponent() { puts("WorldComponent()"); }
 	~WorldComponent() { puts("~WorldComponent()"); }
 	
@@ -47,6 +51,8 @@ private:
 
 class ExclamationComponent : public ComponentImpl<ExclamationComponent> {
 public:
+	DEFINE_COMPONENT_TYPE(ExclamationComponent)
+	
 	ExclamationComponent() { puts("ExclamationComponent()"); }
 	~ExclamationComponent() { puts("~ExclamationComponent()"); }
 	
@@ -90,17 +96,25 @@ AutoObject::~AutoObject() { puts("~AutoObject()"); }
 int AutoObject::Value() const { return _impl->i; }
 
 int main() {
-	ComponentFactory factory;
+	ComponentFactory<DynamicFactoryPolicy> factory1;
 	
-	factory.Register(ComponentFactory::HashName("Hello"), HelloComponent::Make);
-	factory.Register(ComponentFactory::HashName("World"), WorldComponent::Make);
-	factory.Register(ComponentFactory::HashName("Exclamation"), ExclamationComponent::Make);
+	factory1.Register<HelloComponent>();
+	factory1.Register<WorldComponent>();
+	factory1.Register<ExclamationComponent>();
+	
+	using ComponentTypes = ComponentTypeList<
+		HelloComponent,
+		WorldComponent,
+		ExclamationComponent
+	>;
+	
+	ComponentFactory<StaticFactoryPolicy<ComponentTypes>> factory2;
 
 	auto scene = std::make_unique<Scene>();
 	//Scene scene;
 	auto sceneObject = scene->AddObject();
-	sceneObject.AddComponent(HelloComponent::Make(scene.get()));
-	sceneObject.AddComponent(factory.MakeComponent("World", scene.get()));
+	sceneObject.AddComponent(factory1.MakeComponent("HelloComponent", scene.get()));
+	sceneObject.AddComponent(factory2.MakeComponent("WorldComponent", scene.get()));
 	sceneObject.AddComponent<ExclamationComponent>();
 	
 	puts("---");

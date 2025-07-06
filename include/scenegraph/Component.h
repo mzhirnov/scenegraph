@@ -23,7 +23,11 @@ struct ComponentMessageParams {
 ///
 class Component : public ForwardListNode<>, public SceneEntity {
 public:
+	using ComponentType = uint32_t;
+	
 	virtual ~Component() = default;
+	
+	virtual ComponentType GetType() const noexcept = 0;
 	
 	template <typename T, typename = std::enable_if_t<std::is_base_of_v<Component, T>>>
 	void DispatchMessagesTo(void (T::*mf)(ComponentMessage, ComponentMessageParams& params) noexcept) noexcept
@@ -84,6 +88,10 @@ private:
 	void Removed(SceneObject*) noexcept {}
 	void Apply(SceneObject*) noexcept {}
 };
+
+#define DEFINE_COMPONENT_TYPE(T) \
+	static constexpr ComponentType Type = Murmur3Hash32(#T); \
+	virtual ComponentType GetType() const noexcept override { return Type; }
 
 ///
 ///

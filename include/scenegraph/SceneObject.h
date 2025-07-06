@@ -1,8 +1,8 @@
 #pragma once
 
-#include <scenegraph/linked/Hierarchy.h>
-#include <scenegraph/SceneEntity.h>
+#include <memory>
 
+class Scene;
 class SceneNode;
 class Component;
 
