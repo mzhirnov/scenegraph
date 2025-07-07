@@ -111,16 +111,25 @@ int main() {
 	ComponentFactory<StaticFactoryPolicy<ComponentTypes>> factory2;
 
 	auto scene = std::make_unique<Scene>();
-	//Scene scene;
+	
 	auto sceneObject = scene->AddObject();
 	sceneObject.AddComponent(factory1.MakeComponent("HelloComponent", scene.get()));
 	sceneObject.AddComponent(factory2.MakeComponent("WorldComponent", scene.get()));
 	sceneObject.AddComponent<ExclamationComponent>();
 	
+	auto child = sceneObject.AppendChild();
+	child.AddComponent<ExclamationComponent>();
+	
 	puts("---");
-	sceneObject.SendMessage(ComponentMessage::Apply);
+	scene->ForEachObject([](SceneObject sceneObject, bool&) {
+		ComponentMessageParams params;
+		sceneObject.BroadcastMessage(ComponentMessage::Apply, params);
+	});
 	puts("---");
-	sceneObject.SendMessage(ComponentMessage::Apply);
+	scene->ForEachObject([](SceneObject sceneObject, bool&) {
+		ComponentMessageParams params;
+		sceneObject.BroadcastMessage(ComponentMessage::Apply, params);
+	});
 	
 	{
 		PoolAllocator<AutoObject, 2> allocator;

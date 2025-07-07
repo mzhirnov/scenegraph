@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstddef>
 
-template <typename T, size_t Size, size_t Align = alignof(std::max_align_t)>
+template <typename T, size_t Size, size_t Align = alignof(void*)>
 class StaticImpl final {
 public:
 	static_assert(Size > 0);
@@ -13,11 +13,11 @@ public:
 	template <typename... Args>
 	constexpr StaticImpl(Args&&... args) noexcept(noexcept(T{std::forward<Args>(args)...})) {
 		static_assert(sizeof(T) == Size);
+		static_assert(alignof(T) == Align);
 		std::construct_at(reinterpret_cast<T*>(_storage.data()), std::forward<Args>(args)...);
 	}
 	
 	constexpr ~StaticImpl() {
-		static_assert(sizeof(T) == Size);
 		std::destroy_at(reinterpret_cast<T*>(_storage.data()));
 	}
 	

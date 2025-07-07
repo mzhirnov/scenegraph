@@ -17,6 +17,8 @@ using SceneAllocator = MonotonicAllocator<1 << 14>;
 ///
 class Scene : public SceneAllocator {
 public:
+	using EnumObjectsCallback = void(*)(SceneObject sceneObject, bool& stop, void* context);
+	
 	Scene();
 	~Scene();
 	
@@ -33,10 +35,16 @@ public:
 	template <typename T, typename... Args>
 	std::unique_ptr<T> NewEntity(Passkey, Args&&... args) noexcept;
 	
+	// void Handler(SceneObject sceneObject, bool& stop)
+	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, bool&>>>
+	bool ForEachObject(Handler&& handler) noexcept;
+	
+	bool ForEachObject(EnumObjectsCallback callback, void* context) noexcept;
+	
 private:
 	// In order not to prevent disposing of first allocator's page by persistent root node,
 	// don't use NewEntity and std::unique_ptr here.
-	StaticImpl<SceneNode, 5 * sizeof(void*), alignof(void*)> _root;
+	StaticImpl<SceneNode, 5 * sizeof(void*)> _root;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -47,6 +55,15 @@ std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
 	static_assert(std::is_base_of_v<SceneEntity, T>);
 	
 	return std::unique_ptr<T>(std::construct_at(Allocate<T>(), std::forward<Args>(args)...));
+}
+
+template <typename Handler, typename>
+bool Scene::ForEachObject(Handler&& handler) noexcept {
+	return ForEachObject(
+		+[](SceneObject sceneObject, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, stop);
+		},
+		std::addressof(handler));
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -60,6 +77,27 @@ T* SceneObject::AddComponent() noexcept {
 	}
 	
 	return nullptr;
+}
+
+template <typename T>
+T* SceneObject::FindComponent() noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	return static_cast<T*>(FindComponent(T::kType));
+}
+
+template <typename T>
+T* SceneObject::FindComponentInParent() noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	return static_cast<T*>(FindComponentInParent(T::kType));
+}
+
+template <typename T>
+T* SceneObject::FindComponentInChildren() noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	return static_cast<T*>(FindComponentInChildren(T::kType));
 }
 
 //---------------------------------------------------------------------------------------------------------------------

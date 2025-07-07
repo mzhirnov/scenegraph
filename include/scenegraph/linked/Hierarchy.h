@@ -61,11 +61,11 @@ public:
 	NodeType* GetRootNode() const noexcept;
 	NodeType* GetLeastCommonAncestorNode(NodeType* node) const noexcept;
 	
-	bool EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept;
+	bool ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept;
 	
 	// void Handler(EnumCallOrder callOrder, NodeType* currentNode, bool& stop)
 	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, EnumCallOrder, NodeType*, bool&>>>
-	bool EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept;
+	bool ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept;
 	
 	// M o d i f i c a t i o n
 	
@@ -129,7 +129,7 @@ Hierarchy<NodeType>& Hierarchy<NodeType>::operator=(Hierarchy&& rhs) noexcept {
 
 template <typename NodeType>
 Hierarchy<NodeType>::~Hierarchy() {
-	EnumChildNodes(EnumDirection::LastToFirst, EnumCallOrder::PostOrder,
+	ForEachChildNode(EnumDirection::LastToFirst, EnumCallOrder::PostOrder,
 		[](EnumCallOrder, NodeType* currentNode, bool&, void*) {
 			currentNode->RemoveAllChildNodes();
 		}, nullptr);
@@ -225,7 +225,7 @@ NodeType* Hierarchy<NodeType>::GetLeastCommonAncestorNode(NodeType* node) const 
 }
 
 template <typename NodeType>
-bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept {
+bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept {
 	assert(callback != nullptr);
 	
 	if (!callback) {
@@ -287,10 +287,10 @@ bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder 
 
 template <typename NodeType>
 template <typename Handler, typename>
-bool Hierarchy<NodeType>::EnumChildNodes(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept {
-	return EnumChildNodes(direction, callOrder,
-		[](EnumCallOrder callOrder, NodeType* currentNode, bool& stop, void* context) {
-			std::invoke(*static_cast<Handler*>(context), callOrder, currentNode, stop);
+bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept {
+	return ForEachChildNode(direction, callOrder,
+		+[](EnumCallOrder callOrder, NodeType* currentNode, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), callOrder, currentNode, stop);
 		},
 		std::addressof(handler));
 }

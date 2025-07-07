@@ -2,6 +2,10 @@
 #include <scenegraph/Component.h>
 #include "SceneNode.h"
 
+Scene* SceneObject::GetScene() noexcept {
+	return _node ? _node->GetScene() : nullptr;
+}
+
 SceneObject SceneObject::Parent() const noexcept {
 	return SceneObject{_node ? _node->GetParentNode() : nullptr};
 }
@@ -64,10 +68,6 @@ void SceneObject::RemoveFromParent() noexcept {
 	}
 }
 
-Scene* SceneObject::GetScene() noexcept {
-	return _node ? _node->GetScene() : nullptr;
-}
-
 Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexcept {
 	assert(_node);
 	assert(component);
@@ -84,15 +84,77 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 	return component.release();
 }
 
-// FindComponent
+Component* SceneObject::FindComponent(uint32_t type) noexcept {
+	if (!_node) {
+		return nullptr;
+	}
+	
+	for (auto& component : _node->GetComponents()) {
+		if (component.Type() == type) {
+			return std::addressof(component);
+		}
+	}
+	
+	return nullptr;
+}
 
-void SceneObject::SendMessage(ComponentMessage message) noexcept {
+Component* SceneObject::FindComponentInParent(uint32_t type) noexcept {
+	if (!_node) {
+		return nullptr;
+	}
+	
+	for (auto parent = _node->GetParentNode(); parent; parent = parent->GetParentNode()) {
+		if (auto component = SceneObject{parent}.FindComponent(type)) {
+			return component;
+		}
+	}
+	
+	return nullptr;
+}
+
+Component* SceneObject::FindComponentInChildren(uint32_t type) noexcept {
+	if (!_node) {
+		return nullptr;
+	}
+	
+	Component* component = nullptr;
+	
+	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
+		[type, &component](EnumCallOrder, SceneNode* node, bool& stop) {
+			if ((component = SceneObject{node}.FindComponent(type))) {
+				stop = true;
+			}
+		});
+	
+	return component;
+}
+
+void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 	if (!_node) {
 		return;
 	}
 	
-	auto& components = _node->GetComponents();
+	params.sceneObject = this;
 	
-	ComponentMessageParams params { this };
+	auto& components = _node->GetComponents();
 	components.BroadcastMessage(message, params);
+}
+
+void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
+	if (!_node) {
+		return;
+	}
+	
+	params.sceneObject = this;
+	auto& components = _node->GetComponents();
+	components.BroadcastMessage(message, params);
+	
+	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
+		[message, &params](EnumCallOrder, SceneNode* node, bool&) {
+			SceneObject sceneObject{node};
+			params.sceneObject = &sceneObject;
+			
+			auto& components = node->GetComponents();
+			components.BroadcastMessage(message, params);
+		});
 }

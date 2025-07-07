@@ -7,6 +7,7 @@ class SceneNode;
 class Component;
 
 enum class ComponentMessage;
+struct ComponentMessageParams;
 
 ///
 /// Scene object is a building block of scene hierarchy
@@ -19,15 +20,16 @@ public:
 		: _node(node)
 	{
 	}
-
-	SceneObject(const SceneObject&) = delete;
-	SceneObject& operator=(const SceneObject&) = delete;
 	
 	bool operator==(const SceneObject& rhs) const noexcept { return _node == rhs._node; }
 	bool operator<(const SceneObject& rhs) const noexcept { return _node < rhs._node; }
 	
 	bool operator!() const noexcept { return !_node; }
 	explicit operator bool() const noexcept { return _node != nullptr; }
+	
+	Scene* GetScene() noexcept;
+	
+	// H i e r a r c h y
 	
 	SceneObject Parent() const noexcept;
 	SceneObject FirstChild() const noexcept;
@@ -46,16 +48,24 @@ public:
 	void RemoveChildren() noexcept;
 	void RemoveFromParent() noexcept;
 	
-	Scene* GetScene() noexcept;
+	// C o m p o n e n t s
 	
 	Component* AddComponent(std::unique_ptr<Component> component) noexcept;
 	
-	template <typename T>
-	T* AddComponent() noexcept;
+	template <typename T> T* AddComponent() noexcept;
 
-	// T* FindComponent<T>() noexcept
+	Component* FindComponent(uint32_t type) noexcept;
+	Component* FindComponentInParent(uint32_t type) noexcept;
+	Component* FindComponentInChildren(uint32_t type) noexcept;
 	
-	void SendMessage(ComponentMessage message) noexcept;
+	template <typename T> T* FindComponent() noexcept;
+	template <typename T> T* FindComponentInParent() noexcept;
+	template <typename T> T* FindComponentInChildren() noexcept;
+	
+	// Sends message to own components
+	void SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
+	// Sends message to own components and those in all children hierarchy
+	void BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
 
 private:
 	SceneNode* _node = nullptr;

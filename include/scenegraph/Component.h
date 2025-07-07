@@ -8,10 +8,12 @@
 
 class SceneObject;
 
+using ComponentType = uint32_t;
+
 enum class ComponentMessage {
-	Added,
-	Removed,
-	Apply
+	Added,        // Added to SceneObject
+	Removed,      // Removed from SceneObject
+	Apply         // Applying to SceneObject
 };
 
 struct ComponentMessageParams {
@@ -23,11 +25,9 @@ struct ComponentMessageParams {
 ///
 class Component : public ForwardListNode<>, public SceneEntity {
 public:
-	using ComponentType = uint32_t;
-	
 	virtual ~Component() = default;
 	
-	virtual ComponentType GetType() const noexcept = 0;
+	virtual ComponentType Type() const noexcept = 0;
 	
 	template <typename T, typename = std::enable_if_t<std::is_base_of_v<Component, T>>>
 	void DispatchMessagesTo(void (T::*mf)(ComponentMessage, ComponentMessageParams& params) noexcept) noexcept
@@ -36,7 +36,7 @@ public:
 	void SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept
 		{ std::invoke(_dispatchMemFn, this, message, params); }
 
-	void Remove() noexcept { _removed = true; }
+	void Remove() noexcept { _removed = 1; }
 	bool Removed() const noexcept { return _removed; }
 	
 protected:
@@ -47,7 +47,14 @@ private:
 
 	DispatchMemFn _dispatchMemFn = &Component::DefaultDispatchMessage;
 	
-	bool _removed = false;
+	uint8_t _removed    : 1 = 0;
+//	uint8_t _reserved7  : 1 = 0;
+//	uint8_t _reserved6  : 1 = 0;
+//	uint8_t _reserved5  : 1 = 0;
+//	uint8_t _reserved4  : 1 = 0;
+//	uint8_t _reserved3  : 1 = 0;
+//	uint8_t _reserved2  : 1 = 0;
+//	uint8_t _reserved1  : 1 = 0;
 };
 
 ///
@@ -90,8 +97,8 @@ private:
 };
 
 #define DEFINE_COMPONENT_TYPE(T) \
-	static constexpr ComponentType Type = Murmur3Hash32(#T); \
-	virtual ComponentType GetType() const noexcept override { return Type; }
+	static constexpr ComponentType kType = Murmur3Hash32(#T); \
+	virtual ComponentType Type() const noexcept override { return kType; }
 
 ///
 ///

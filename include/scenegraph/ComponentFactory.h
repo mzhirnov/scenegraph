@@ -10,8 +10,8 @@ class Scene;
 class Component;
 template <typename> class ComponentImpl;
 
-using HashType = uint32_t;
-using MakerType = std::unique_ptr<Component> (*)(Scene* scene) noexcept;
+using ComponentHashType = uint32_t;
+using ComponentMakerType = std::unique_ptr<Component> (*)(Scene* scene) noexcept;
 
 ///
 ///
@@ -19,7 +19,7 @@ using MakerType = std::unique_ptr<Component> (*)(Scene* scene) noexcept;
 template <typename Policy>
 class ComponentFactory : public Policy {
 public:
-	constexpr static HashType HashName(std::string_view name) noexcept { return Murmur3Hash32(name); }
+	constexpr static ComponentHashType HashName(std::string_view name) noexcept { return Murmur3Hash32(name); }
 	
 	ComponentFactory() = default;
 	
@@ -39,18 +39,18 @@ public:
 	template <typename C>
 	void Register() {
 		static_assert(std::is_base_of_v<ComponentImpl<C>, C>);
-		Register(C::Type, C::Make);
+		Register(C::kType, C::Make);
 	}
 	
-	void Register(std::string_view name, MakerType maker)
+	void Register(std::string_view name, ComponentMakerType maker)
 		{ Register(Murmur3Hash32(name), maker); }
 	
-	void Register(HashType hashedName, MakerType maker);
+	void Register(ComponentHashType hashedName, ComponentMakerType maker);
 	
-	std::unique_ptr<Component> MakeComponent(HashType hashedName, Scene* scene) const noexcept;
+	std::unique_ptr<Component> MakeComponent(ComponentHashType hashedName, Scene* scene) const noexcept;
 	
 protected:
-	std::vector<std::pair<HashType, MakerType>> _makers;
+	std::vector<std::pair<ComponentHashType, ComponentMakerType>> _makers;
 };
 
 ///
@@ -61,10 +61,10 @@ class ComponentTypeList {
 public:
 	static_assert((std::is_base_of_v<Component, Ts> && ...));
 	
-	using ArrayType = std::array<std::pair<HashType, MakerType>, sizeof...(Ts)>;
+	using ArrayType = std::array<std::pair<ComponentHashType, ComponentMakerType>, sizeof...(Ts)>;
 	
 	static constexpr auto ToSortedArray() noexcept {
-		ArrayType arr = { std::make_pair(Ts::Type, Ts::Make)... };
+		ArrayType arr = { std::make_pair(Ts::kType, Ts::Make)... };
 		std::sort(arr.begin(), arr.end(), [](auto& lhs, auto& rhs) { return lhs.first < rhs.first; });
 		return arr;
 	}
@@ -78,7 +78,7 @@ class StaticFactoryPolicy {
 public:
 	StaticFactoryPolicy() = default;
 	
-	std::unique_ptr<Component> MakeComponent(HashType hashedName, Scene* scene) const noexcept {
+	std::unique_ptr<Component> MakeComponent(ComponentHashType hashedName, Scene* scene) const noexcept {
 		auto it = std::lower_bound(_makers.begin(), _makers.end(), hashedName,
 			[](const auto& elem, auto value) { return elem.first < value; });
 		
