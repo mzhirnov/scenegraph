@@ -2,7 +2,7 @@
 
 void ComponentList::BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 	for (auto it = begin(), e = end(); it != e; /**/) {
-		if (auto& component = *it; !component.Removed()) {
+		if (auto& component = *it; !component.IsRemoved()) {
 			component.SendMessage(message, params);
 			++it;
 		}

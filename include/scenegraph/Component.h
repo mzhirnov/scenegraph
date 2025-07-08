@@ -37,7 +37,7 @@ public:
 		{ std::invoke(_dispatchMemFn, this, message, params); }
 
 	void Remove() noexcept { _removed = 1; }
-	bool Removed() const noexcept { return _removed; }
+	bool IsRemoved() const noexcept { return _removed; }
 	
 protected:
 	void DefaultDispatchMessage(ComponentMessage, ComponentMessageParams&) noexcept {}
