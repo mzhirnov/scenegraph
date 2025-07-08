@@ -91,17 +91,18 @@ private:
 	std::unique_ptr<NodeType> _firstChildNode;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
 template <typename NodeType>
 Hierarchy<NodeType>::Hierarchy(Hierarchy&& rhs) noexcept
-	: _prevSiblingNode(
+	: _parentNode(rhs._parentNode)
+	, _prevSiblingNode(
 		rhs._prevSiblingNode == static_cast<NodeType*>(&rhs) ?
 			static_cast<NodeType*>(this) :
-			std::exchange(rhs._prevSiblingNode, static_cast<NodeType*>(&rhs)))
+			rhs._prevSiblingNode)
 	, _nextSiblingNode(std::move(rhs._nextSiblingNode))
 	, _firstChildNode(std::move(rhs._firstChildNode))
 {
-	rhs._parentNode = nullptr;
-	
 	for (auto child = GetFirstChildNode(); child; child = child->GetNextSiblingNode()) {
 		child->_parentNode = static_cast<NodeType*>(this);
 	}
@@ -110,14 +111,13 @@ Hierarchy<NodeType>::Hierarchy(Hierarchy&& rhs) noexcept
 template <typename NodeType>
 Hierarchy<NodeType>& Hierarchy<NodeType>::operator=(Hierarchy&& rhs) noexcept {
 	if (this != &rhs) {
+		_parentNode = rhs._parentNode;
 		_prevSiblingNode =
 			rhs._prevSiblingNode == static_cast<NodeType*>(&rhs) ?
 				static_cast<NodeType*>(this) :
-				std::exchange(rhs._prevSiblingNode, static_cast<NodeType*>(&rhs));
+				rhs._prevSiblingNode;
 		_nextSiblingNode = std::move(rhs._nextSiblingNode);
 		_firstChildNode = std::move(rhs._firstChildNode);
-		
-		rhs._parentNode = nullptr;
 		
 		for (auto child = GetFirstChildNode(); child; child = child->GetNextSiblingNode()) {
 			child->_parentNode = static_cast<NodeType*>(this);
