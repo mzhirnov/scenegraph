@@ -1,8 +1,8 @@
 #pragma once
 
 #include <scenegraph/memory/MonotonicAllocator.h>
-#include <scenegraph/utils/Passkey.h>
 #include <scenegraph/utils/StaticImpl.h>
+#include <scenegraph/utils/NonCopyable.h>
 #include <scenegraph/SceneObject.h>
 #include <scenegraph/Component.h>
 
