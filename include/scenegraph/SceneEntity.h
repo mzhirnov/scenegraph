@@ -14,6 +14,6 @@ public:
 	static void* operator new(std::size_t, ...) = delete;
 	static void* operator new[](std::size_t, ...) = delete;
 	
-	static void operator delete(void* p, std::size_t size) noexcept;
+	static void operator delete(void* p) noexcept;
 	static void operator delete[](void*, ...) = delete;
 };

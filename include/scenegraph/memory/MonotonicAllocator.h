@@ -20,6 +20,10 @@ public:
 	
 	template <typename T>
 	[[nodiscard]] T* Allocate() noexcept {
+		// Type must be complete
+		static_assert(sizeof(T) > 0);
+		static_assert(!std::is_void_v<T>);
+		
 		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
 	}
 	
@@ -55,7 +59,7 @@ public:
 		return p;
 	}
 	
-	void Deallocate(void* p, size_t size) noexcept {
+	void Deallocate(void* p) noexcept {
 		// Deallocating nullptr must be ok
 		if (!p) {
 			return;
@@ -63,7 +67,7 @@ public:
 		
 		auto page = GetPage(p);
 		
-		page->Deallocate(size);
+		page->Deallocate(p);
 		
 		// If deallocated from extra page and the page got empty, move it to free list
 		if (!page->Single() && page->Empty()) {
@@ -88,12 +92,14 @@ public:
 	void DisposeFreePages() noexcept { _firstFreePage.reset(); }
 	
 private:
+	static constexpr uint32_t kSignature = 0xaaaa5555;
+	
 	struct ItemHeader {
 #ifndef NDEBUG
-		static constexpr uint32_t kSignature = 0xaaaa5555;
 		uint32_t signature = kSignature;
 #endif
 		uint32_t offset;
+		uint32_t size;
 	};
 	
 	template <typename T>
@@ -136,20 +142,20 @@ private:
 			// Align must be non zero power of two
 			assert(align && !(align & (align - 1)));
 			
-			const auto headerAlignMask = alignof(ItemHeader) - 1;
-			const auto blockAlignMask = align - 1;
-			
 			// Allocated block begins here
 			const auto baseOffset = this->_currentOffset;
 			
 			// Aligned header
+			const auto headerAlignMask = alignof(ItemHeader) - 1;
 			const auto headerOffset = (this->_currentOffset + headerAlignMask) & ~headerAlignMask;
 			this->_currentOffset = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
 			
 			// Aligned block
+			const auto blockAlignMask = align - 1;
 			const auto blockOffset = (this->_currentOffset + blockAlignMask) & ~blockAlignMask;
 			this->_currentOffset = static_cast<uint32_t>(blockOffset + size);
 			
+			// No free space
 			if (this->_currentOffset > _bytes.size()) {
 				this->_currentOffset = baseOffset;
 				return nullptr;
@@ -160,14 +166,17 @@ private:
 			
 			// Offset from allocated block to page start
 			header->offset = static_cast<decltype(ItemHeader::offset)>(p - reinterpret_cast<std::byte*>(this));
+			header->size = static_cast<decltype(ItemHeader::size)>(size);
 			
 			this->_allocatedSize += static_cast<int>(size);
 			
 			return p;
 		}
 		
-		void Deallocate(size_t size) noexcept {
-			this->_allocatedSize -= static_cast<int>(size);
+		void Deallocate(void* p) noexcept {
+			auto header = static_cast<ItemHeader*>(p) - 1;
+			
+			this->_allocatedSize -= static_cast<int>(header->size);
 			
 			assert(this->_allocatedSize >= 0);
 			
@@ -202,7 +211,7 @@ private:
 	[[nodiscard]]
 	static Page* GetPage(void* p) noexcept {
 		auto header = static_cast<ItemHeader*>(p) - 1;
-		assert(header->signature == ItemHeader::kSignature);
+		assert(header->signature == kSignature);
 		auto page = reinterpret_cast<Page*>(static_cast<std::byte*>(p) - header->offset);
 		return page;
 	}

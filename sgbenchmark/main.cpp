@@ -98,7 +98,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 	
 	for (auto _ : state) {
 		for (auto& node : nodes) {
-			node = static_cast<Node*>(allocator.Allocate());
+			node = allocator.Allocate<Node>();
 		}
 		
 		for (auto& node : nodes) {
@@ -106,7 +106,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			node = static_cast<Node*>(allocator.Allocate());
+			node = allocator.Allocate<Node>();
 		}
 		
 		for (auto& node : nodes) {
@@ -128,7 +128,7 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			allocator.Deallocate(node, sizeof(Node));
+			allocator.Deallocate(node);
 		}
 		
 		for (auto& node : nodes) {
@@ -136,7 +136,7 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 		}
 		
 		for (auto& node : nodes) {
-			allocator.Deallocate(node, sizeof(Node));
+			allocator.Deallocate(node);
 		}
 	}
 }

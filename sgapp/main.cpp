@@ -185,7 +185,7 @@ int main() {
 		Allocator allocator;
 		
 		auto* p = allocator.Allocate<int>();
-		allocator.Deallocate(p, sizeof(int));
+		allocator.Deallocate(p);
 	}
 	
 	return 0;

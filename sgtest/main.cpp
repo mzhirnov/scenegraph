@@ -331,8 +331,8 @@ TEST(MonotonicAllocator, GetAllocator) {
 	EXPECT_EQ(a1, std::addressof(allocator));
 	EXPECT_EQ(a2, std::addressof(allocator));
 	
-	allocator.Deallocate(p1, sizeof(int));
-	allocator.Deallocate(p2, sizeof(int));
+	allocator.Deallocate(p1);
+	allocator.Deallocate(p2);
 	
 	//----------------------------------------------------------------------------
 	
@@ -345,6 +345,6 @@ TEST(MonotonicAllocator, GetAllocator) {
 	EXPECT_EQ(a3, std::addressof(allocator));
 	EXPECT_EQ(a4, std::addressof(allocator));
 	
-	allocator.Deallocate(p3, sizeof(int));
-	allocator.Deallocate(p4, sizeof(int));
+	allocator.Deallocate(p3);
+	allocator.Deallocate(p4);
 }

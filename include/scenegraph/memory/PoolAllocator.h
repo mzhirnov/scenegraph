@@ -18,11 +18,36 @@ public:
 		return page->Allocator();
 	}
 	
+	template <typename T>
+	[[nodiscard]] T* Allocate() noexcept {
+		// Type must be complete
+		static_assert(sizeof(T) > 0);
+		static_assert(!std::is_void_v<T>);
+		
+		// Type must fit pool item
+		static_assert(sizeof(T) <= Size);
+		static_assert(alignof(T) <= Align);
+		
+		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
+	}
+	
 	[[nodiscard]]
 	void* Allocate() noexcept {
+		return Allocate(Size, Align);
+	}
+	
+	[[nodiscard]]
+	void* Allocate(size_t size, size_t align) noexcept {
+		assert(size <= Size);
+		assert(align <= Align);
+		
+		if (size > Size || align > Align) {
+			return nullptr;
+		}
+		
 		// Try allocate from occupied pages, from newer to older
 		for (auto page = _firstPage.get(); page; page = page->nextPage.get()) {
-			if (auto p = page->TryAllocate()) {
+			if (auto p = page->TryAllocate(size, align)) {
 				return p;
 			}
 		}
@@ -45,7 +70,7 @@ public:
 		_firstPage = std::move(newPage);
 		
 		// Allocation from empty page must succeed
-		auto p = _firstPage->TryAllocate();
+		auto p = _firstPage->TryAllocate(size, align);
 		assert(p != nullptr);
 		return p;
 	}
@@ -127,7 +152,7 @@ private:
 		}
 		
 		[[nodiscard]]
-		void* TryAllocate() noexcept {
+		void* TryAllocate(size_t, size_t) noexcept {
 			// The page is full
 			if (_freeListHead >= PageItems) {
 				return nullptr;

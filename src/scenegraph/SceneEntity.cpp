@@ -5,7 +5,7 @@ Scene* SceneEntity::GetScene() noexcept {
 	return static_cast<Scene*>(SceneAllocator::GetAllocator(this));
 }
 
-void SceneEntity::operator delete(void* p, std::size_t size) noexcept {
+void SceneEntity::operator delete(void* p) noexcept {
 	auto allocator = SceneAllocator::GetAllocator(p);
-	allocator->Deallocate(p, size);
+	allocator->Deallocate(p);
 }
