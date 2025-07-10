@@ -195,22 +195,24 @@ template <typename NodeType>
 NodeType* Hierarchy<NodeType>::GetLeastCommonAncestorNode(NodeType* node) const noexcept {
 	assert(node != nullptr);
 	
-	if (!node)
+	if (!node) {
 		return nullptr;
+	}
 	
 	auto thisAncestor = static_cast<const NodeType*>(this);
 	auto nodeAncestor = node;
 	
 	while (thisAncestor && nodeAncestor) {
-		if (thisAncestor == nodeAncestor)
+		if (thisAncestor == nodeAncestor) {
 			return nodeAncestor;
-		
+		}
 		thisAncestor = thisAncestor->_parentNode;
 		nodeAncestor = nodeAncestor->_parentNode;
 	}
 	
-	if (!thisAncestor && !nodeAncestor)
+	if (!thisAncestor && !nodeAncestor) {
 		return nullptr;
+	}
 
 	auto farthestAncestor = thisAncestor ? thisAncestor : nodeAncestor;
 	auto reentryAncestor1 = thisAncestor ? static_cast<const NodeType*>(this) : node;
@@ -299,8 +301,9 @@ template <typename NodeType>
 NodeType* Hierarchy<NodeType>::AppendChildNode(std::unique_ptr<NodeType> child) noexcept {
 	assert(child != nullptr);
 	
-	if (!child)
+	if (!child) {
 		return nullptr;
+	}
 	
 	child->_parentNode = static_cast<NodeType*>(this);
 	
@@ -322,8 +325,9 @@ template <typename NodeType>
 NodeType* Hierarchy<NodeType>::PrependChildNode(std::unique_ptr<NodeType> child) noexcept {
 	assert(child != nullptr);
 	
-	if (!child)
+	if (!child) {
 		return nullptr;
+	}
 	
 	child->_parentNode = static_cast<NodeType*>(this);
 	
@@ -369,13 +373,15 @@ std::unique_ptr<NodeType> Hierarchy<NodeType>::ReplaceChildNode(NodeType* nodeTo
 	assert(nodeToReplace != nullptr);
 	assert(newNode != nullptr);
 	
-	if (!nodeToReplace || !newNode)
+	if (!nodeToReplace || !newNode) {
 		return {};
+	}
 	
 	assert(nodeToReplace->_parentNode == static_cast<NodeType*>(this));
 	
-	if (nodeToReplace->_parentNode != static_cast<NodeType*>(this))
+	if (nodeToReplace->_parentNode != static_cast<NodeType*>(this)) {
 		return {};
+	}
 	
 	assert(newNode->_parentNode == nullptr);
 	
@@ -419,14 +425,17 @@ NodeType* Hierarchy<NodeType>::InsertNodeAfter(NodeType* node, std::unique_ptr<N
 	assert(node != nullptr);
 	assert(newChild != nullptr);
 	
-	if (!node || !newChild)
+	if (!node || !newChild) {
 		return nullptr;
+	}
 	
 	auto parent = node->_parentNode;
+	
 	assert(parent != nullptr);
 	
-	if (!parent)
+	if (!parent) {
 		return nullptr;
+	}
 
 	newChild->_parentNode = parent;
 	newChild->_prevSiblingNode = node;
@@ -451,14 +460,17 @@ NodeType* Hierarchy<NodeType>::InsertNodeBefore(NodeType* node, std::unique_ptr<
 	assert(node != nullptr);
 	assert(newChild != nullptr);
 	
-	if (!node || !newChild)
+	if (!node || !newChild) {
 		return nullptr;
+	}
 	
 	auto parent = node->_parentNode;
+	
 	assert(parent != nullptr);
 	
-	if (!parent)
+	if (!parent) {
 		return nullptr;
+	}
 
 	newChild->_parentNode = parent;
 	newChild->_prevSiblingNode = node->_prevSiblingNode;
@@ -483,14 +495,17 @@ template <typename NodeType>
 std::unique_ptr<NodeType> Hierarchy<NodeType>::RemoveNode(NodeType* nodeToRemove) noexcept {
 	assert(nodeToRemove != nullptr);
 	
-	if (!nodeToRemove)
+	if (!nodeToRemove) {
 		return {};
+	}
 	
 	auto parent = nodeToRemove->_parentNode;
+	
 	assert(parent != nullptr);
 	
-	if (!parent)
+	if (!parent) {
 		return {};
+	}
 	
 	if (nodeToRemove->_nextSiblingNode) {
 		nodeToRemove->_nextSiblingNode->_prevSiblingNode = nodeToRemove->_prevSiblingNode;
