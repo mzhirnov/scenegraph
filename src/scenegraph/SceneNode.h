@@ -16,10 +16,7 @@ public:
 	SceneNode(const SceneNode&) = delete;
 	SceneNode& operator=(const SceneNode&) = delete;
 	
-	void AddComponent(Component& c) noexcept { _components.PushBack(c); }
+	ComponentList components;
 	
-	ComponentList& GetComponents() noexcept { return _components; }
-	
-private:
-	ComponentList _components;
+	void AddComponent(Component& c) noexcept { components.PushBack(c); }
 };

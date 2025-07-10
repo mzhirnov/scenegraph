@@ -65,6 +65,7 @@ void SceneObject::RemoveChildren() noexcept {
 void SceneObject::RemoveFromParent() noexcept {
 	if (_node) {
 		_node->RemoveFromParent();
+		_node = nullptr;
 	}
 }
 
@@ -89,7 +90,7 @@ Component* SceneObject::FindComponent(ComponentType type) noexcept {
 		return nullptr;
 	}
 	
-	for (auto& component : _node->GetComponents()) {
+	for (auto& component : _node->components) {
 		if (component.Type() == type) {
 			return std::addressof(component);
 		}
@@ -136,7 +137,7 @@ void SceneObject::ForEachComponent(ComponentType type, EnumComponentsCallback ca
 	
 	bool stop = false;
 	
-	for (auto& component : _node->GetComponents()) {
+	for (auto& component : _node->components) {
 		if (component.Type() == type) {
 			callback(*this, std::addressof(component), stop, context);
 			if (stop) {
@@ -155,7 +156,7 @@ void SceneObject::ForEachComponentInParent(ComponentType type, EnumComponentsCal
 	
 	for (auto parent = _node->GetParentNode(); parent && !stop; parent = parent->GetParentNode()) {
 		SceneObject sceneObject{parent};
-		for (auto& component : parent->GetComponents()) {
+		for (auto& component : parent->components) {
 			if (component.Type() == type) {
 				callback(sceneObject, std::addressof(component), stop, context);
 			}
@@ -171,7 +172,7 @@ void SceneObject::ForEachComponentInChildren(ComponentType type, EnumComponentsC
 	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
 		[type, callback, context](EnumCallOrder, SceneNode* node, bool& stop) {
 			SceneObject sceneObject{node};
-			for (auto& component : node->GetComponents()) {
+			for (auto& component : node->components) {
 				if (component.Type() == type) {
 					callback(sceneObject, std::addressof(component), stop, context);
 				}
@@ -185,9 +186,7 @@ void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& 
 	}
 	
 	params.sceneObject = this;
-	
-	auto& components = _node->GetComponents();
-	components.BroadcastMessage(message, params);
+	_node->components.BroadcastMessage(message, params);
 }
 
 void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
@@ -196,15 +195,13 @@ void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessagePar
 	}
 	
 	params.sceneObject = this;
-	auto& components = _node->GetComponents();
+	auto& components = _node->components;
 	components.BroadcastMessage(message, params);
 	
 	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
 		[message, &params](EnumCallOrder, SceneNode* node, bool&) {
 			SceneObject sceneObject{node};
 			params.sceneObject = &sceneObject;
-			
-			auto& components = node->GetComponents();
-			components.BroadcastMessage(message, params);
+			node->components.BroadcastMessage(message, params);
 		});
 }

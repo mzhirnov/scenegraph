@@ -1,7 +1,7 @@
 #include "SceneNode.h"
 
 SceneNode::~SceneNode() {
-	for (auto& c : _components) {
+	for (auto& c : components) {
 		delete std::addressof(c);
 	}
 }
