@@ -84,7 +84,7 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 	return component.release();
 }
 
-Component* SceneObject::FindComponent(uint32_t type) noexcept {
+Component* SceneObject::FindComponent(ComponentType type) noexcept {
 	if (!_node) {
 		return nullptr;
 	}
@@ -98,7 +98,7 @@ Component* SceneObject::FindComponent(uint32_t type) noexcept {
 	return nullptr;
 }
 
-Component* SceneObject::FindComponentInParent(uint32_t type) noexcept {
+Component* SceneObject::FindComponentInParent(ComponentType type) noexcept {
 	if (!_node) {
 		return nullptr;
 	}
@@ -112,7 +112,7 @@ Component* SceneObject::FindComponentInParent(uint32_t type) noexcept {
 	return nullptr;
 }
 
-Component* SceneObject::FindComponentInChildren(uint32_t type) noexcept {
+Component* SceneObject::FindComponentInChildren(ComponentType type) noexcept {
 	if (!_node) {
 		return nullptr;
 	}
@@ -128,6 +128,57 @@ Component* SceneObject::FindComponentInChildren(uint32_t type) noexcept {
 	
 	return component;
 }
+
+void SceneObject::ForEachComponent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return;
+	}
+	
+	bool stop = false;
+	
+	for (auto& component : _node->GetComponents()) {
+		if (component.Type() == type) {
+			callback(*this, std::addressof(component), stop, context);
+			if (stop) {
+				break;
+			}
+		}
+	}
+}
+
+void SceneObject::ForEachComponentInParent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return;
+	}
+	
+	bool stop = false;
+	
+	for (auto parent = _node->GetParentNode(); parent && !stop; parent = parent->GetParentNode()) {
+		SceneObject sceneObject{parent};
+		for (auto& component : parent->GetComponents()) {
+			if (component.Type() == type) {
+				callback(sceneObject, std::addressof(component), stop, context);
+			}
+		}
+	}
+}
+
+void SceneObject::ForEachComponentInChildren(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return;
+	}
+	
+	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
+		[type, callback, context](EnumCallOrder, SceneNode* node, bool& stop) {
+			SceneObject sceneObject{node};
+			for (auto& component : node->GetComponents()) {
+				if (component.Type() == type) {
+					callback(sceneObject, std::addressof(component), stop, context);
+				}
+			}
+		});
+}
+
 
 void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 	if (!_node) {

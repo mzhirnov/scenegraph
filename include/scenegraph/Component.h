@@ -2,23 +2,10 @@
 
 #include <scenegraph/linked/ForwardList.h>
 #include <scenegraph/SceneEntity.h>
+#include <scenegraph/ComponentTypes.h>
 
 #include <type_traits>
 #include <functional>
-
-class SceneObject;
-
-using ComponentType = uint32_t;
-
-enum class ComponentMessage {
-	Added,        // Added to SceneObject
-	Removed,      // Removed from SceneObject
-	Apply         // Applying to SceneObject
-};
-
-struct ComponentMessageParams {
-	SceneObject* sceneObject;
-};
 
 ///
 /// Component composes a scene object
@@ -97,7 +84,7 @@ private:
 };
 
 #define DEFINE_COMPONENT_TYPE(T) \
-	static constexpr ComponentType kType = Murmur3Hash32(#T); \
+	static constexpr ComponentType kType = ComponentTypeFromName(#T); \
 	virtual ComponentType Type() const noexcept override { return kType; }
 
 ///

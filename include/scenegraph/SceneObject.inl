@@ -31,3 +31,37 @@ T* SceneObject::FindComponentInChildren() noexcept {
 	
 	return static_cast<T*>(FindComponentInChildren(T::kType));
 }
+
+template <typename T, typename Handler>
+void SceneObject::ForEachComponent(Handler&& handler) noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	ForEachComponent(T::kType,
+		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
+		},
+		std::addressof(handler));
+}
+
+template <typename T, typename Handler>
+void SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	ForEachComponentInParent(T::kType,
+		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
+		},
+		std::addressof(handler));
+}
+
+template <typename T, typename Handler>
+void SceneObject::ForEachComponentInChildren(Handler&& handler) noexcept {
+	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
+	
+	ForEachComponentInChildren(T::kType,
+		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
+		},
+		std::addressof(handler));
+}
+

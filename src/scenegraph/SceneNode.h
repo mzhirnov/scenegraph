@@ -21,7 +21,5 @@ public:
 	ComponentList& GetComponents() noexcept { return _components; }
 	
 private:
-	friend class Hierarchy<SceneNode>;
-	
 	ComponentList _components;
 };

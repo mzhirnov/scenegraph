@@ -120,6 +120,16 @@ int main() {
 	auto child = sceneObject.AppendChild();
 	child.AddComponent<ExclamationComponent>();
 	
+	sceneObject.ForEachComponent<ExclamationComponent>([](SceneObject, ExclamationComponent* c, bool&) {
+		std::cout << c << '\n';
+	});
+	sceneObject.ForEachComponentInChildren<ExclamationComponent>([](SceneObject, ExclamationComponent* c, bool&) {
+		std::cout << c << '\n';
+	});
+	child.ForEachComponentInParent<ExclamationComponent>([](SceneObject, ExclamationComponent* c, bool&) {
+		std::cout << c << '\n';
+	});
+	
 	puts("---");
 	scene->ForEachObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
