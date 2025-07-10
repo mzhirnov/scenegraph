@@ -35,7 +35,7 @@ public:
 	};
 	
 	static constexpr std::size_t MaxSize = kDataSize;
-	static constexpr std::size_t MaxAlign = 16384;
+	static constexpr std::size_t MaxAlign = 16384; // Just some big power of two
 	
 	// Public fields
 	using MonotonicPageHeader<MonotonicPage>::nextPage;
