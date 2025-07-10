@@ -32,7 +32,7 @@ T* SceneObject::FindComponentInChildren() noexcept {
 	return static_cast<T*>(FindComponentInChildren(T::kType));
 }
 
-template <typename T, typename Handler>
+template <typename T, typename Handler, typename>
 void SceneObject::ForEachComponent(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
@@ -43,7 +43,7 @@ void SceneObject::ForEachComponent(Handler&& handler) noexcept {
 		std::addressof(handler));
 }
 
-template <typename T, typename Handler>
+template <typename T, typename Handler, typename>
 void SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
@@ -54,7 +54,7 @@ void SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
 		std::addressof(handler));
 }
 
-template <typename T, typename Handler>
+template <typename T, typename Handler, typename>
 void SceneObject::ForEachComponentInChildren(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	

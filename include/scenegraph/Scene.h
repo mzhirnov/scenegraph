@@ -19,11 +19,6 @@ class Scene : public SceneAllocator {
 public:
 	using EnumObjectsCallback = void(*)(SceneObject sceneObject, bool& stop, void* context);
 	
-	Scene();
-	~Scene();
-	
-	SceneObject AddObject() noexcept;
-	
 	class Passkey : NonCopyableNonMovable {
 		friend class Scene;
 		friend class SceneObject;
@@ -31,6 +26,11 @@ public:
 		
 		constexpr explicit Passkey() = default;
 	};
+	
+	Scene();
+	~Scene();
+	
+	SceneObject AddObject() noexcept;
 
 	template <typename T, typename... Args>
 	std::unique_ptr<T> NewEntity(Passkey, Args&&... args) noexcept;

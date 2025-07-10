@@ -179,7 +179,6 @@ void SceneObject::ForEachComponentInChildren(ComponentType type, EnumComponentsC
 		});
 }
 
-
 void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 	if (!_node) {
 		return;

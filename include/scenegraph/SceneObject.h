@@ -68,9 +68,14 @@ public:
 	template <typename T> T* FindComponentInChildren() noexcept;
 	
 	// void Handler(SceneObject, T* component, bool& stop)
-	template <typename T, typename Handler> void ForEachComponent(Handler&& handler) noexcept;
-	template <typename T, typename Handler> void ForEachComponentInParent(Handler&& handler) noexcept;
-	template <typename T, typename Handler> void ForEachComponentInChildren(Handler&& handler) noexcept;
+	template <typename T, typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, T*, bool&>>>
+	void ForEachComponent(Handler&& handler) noexcept;
+	
+	template <typename T, typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, T*, bool&>>>
+	void ForEachComponentInParent(Handler&& handler) noexcept;
+	
+	template <typename T, typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, T*, bool&>>>
+	void ForEachComponentInChildren(Handler&& handler) noexcept;
 	
 	// Sends message to own components
 	void SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
