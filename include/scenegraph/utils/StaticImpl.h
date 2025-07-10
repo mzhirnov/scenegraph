@@ -21,6 +21,9 @@ public:
 		std::destroy_at(reinterpret_cast<T*>(_storage.data()));
 	}
 	
+	constexpr T* GetPtr() noexcept { return reinterpret_cast<T*>(_storage.data()); }
+	constexpr const T* GetPtr() const noexcept { return reinterpret_cast<const T*>(_storage.data()); }
+	
 	constexpr T* operator->() noexcept { return reinterpret_cast<T*>(_storage.data()); }
 	constexpr const T* operator->() const noexcept { return reinterpret_cast<const T*>(_storage.data()); }
 	
