@@ -53,6 +53,8 @@ public:
 	static std::unique_ptr<Component> Make(Scene* scene) noexcept;
 
 protected:
+	using Super = ComponentImpl;
+	
 	ComponentImpl() noexcept
 	{
 		DispatchMessagesTo(&ComponentImpl::DispatchMessage);
@@ -84,6 +86,7 @@ private:
 };
 
 #define DEFINE_COMPONENT_TYPE(T) \
+	static_assert(std::is_same_v<T::Super, ComponentImpl<T>>); \
 	static constexpr ComponentType kType = ComponentTypeFromName(#T); \
 	virtual ComponentType Type() const noexcept override { return kType; }
 
