@@ -96,6 +96,11 @@ public:
 		return page;
 	}
 	
+	[[nodiscard]]
+	static std::size_t GetSize(const void*) noexcept {
+		return Size;
+	}
+	
 private:
 	struct ItemStorage {
 		union {

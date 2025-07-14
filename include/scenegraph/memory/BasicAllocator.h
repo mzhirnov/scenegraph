@@ -21,6 +21,11 @@ public:
 		return static_cast<BasicAllocator*>(page->Allocator());
 	}
 	
+	[[nodiscard]]
+	static std::size_t GetSize(const void* p) noexcept {
+		return Page::GetSize(p);
+	}
+	
 	template <typename T>
 	[[nodiscard]] T* Allocate() noexcept {
 		// Type must be complete

@@ -122,6 +122,13 @@ public:
 		return page;
 	}
 	
+	[[nodiscard]]
+	static std::size_t GetSize(const void* p) noexcept {
+		auto header = static_cast<const ItemHeader*>(p) - 1;
+		assert(header->signature == kSignature);
+		return header->size;
+	}
+	
 private:
 	static constexpr uint32_t kSignature = 0xaaaa5555;
 
