@@ -80,7 +80,7 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 	_node->AddComponent(*component);
 	
 	ComponentMessageParams params { this };
-	component->SendMessage(ComponentMessage::Added, params);
+	component->SendMessage(ComponentMessages::Added, params);
 	
 	return component.release();
 }

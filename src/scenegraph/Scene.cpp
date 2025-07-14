@@ -3,7 +3,19 @@
 
 Scene::Scene() = default;
 
-Scene::~Scene() = default;
+Scene::~Scene() {
+	// Destroy list inplace in the loop instead of auto recursion
+	while (nextScene) {
+		nextScene = std::move(nextScene->nextScene);
+	}
+}
+
+std::unique_ptr<SceneString> Scene::NewString(std::string_view str) noexcept {
+	auto p = static_cast<char*>(Allocate(str.size() + 1, 1));
+	std::memcpy(p, str.data(), str.size());
+	p[str.size()] = 0;
+	return std::unique_ptr<SceneString>(static_cast<SceneString*>(static_cast<void*>(p)));
+}
 
 SceneObject Scene::AddObject() noexcept {
 	return SceneObject{_root->AppendChildNode(NewEntity<SceneNode>(Passkey{}))};

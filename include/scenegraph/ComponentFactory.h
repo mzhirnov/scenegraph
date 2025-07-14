@@ -17,12 +17,11 @@ using ComponentMakerType = std::unique_ptr<Component> (*)(Scene* scene) noexcept
 template <typename Policy>
 class ComponentFactory : public Policy {
 public:
-	ComponentFactory() = default;
-	
+	using Policy::Policy;
 	using Policy::MakeComponent;
 	
 	std::unique_ptr<Component> MakeComponent(std::string_view name, Scene* scene) const noexcept
-		{ return MakeComponent(ComponentTypeFromName(name), scene); }
+		{ return MakeComponent(MakeComponentType(name), scene); }
 };
 
 ///
@@ -32,14 +31,24 @@ class DynamicFactoryPolicy {
 public:
 	DynamicFactoryPolicy() = default;
 	
+	DynamicFactoryPolicy(std::initializer_list<std::pair<ComponentType, ComponentMakerType>> list)
+	{
+		_makers.reserve(list.size());
+		
+		for (auto&& [type, maker] : list) {
+			Register(type, maker);
+		}
+	}
+	
 	template <typename C>
 	void Register() {
 		static_assert(std::is_base_of_v<ComponentImpl<C>, C>);
+		
 		Register(C::kType, C::Make);
 	}
 	
 	void Register(std::string_view name, ComponentMakerType maker)
-		{ Register(ComponentTypeFromName(name), maker); }
+		{ Register(MakeComponentType(name), maker); }
 	
 	void Register(ComponentType type, ComponentMakerType maker);
 	
@@ -72,8 +81,6 @@ public:
 template <typename CL>
 class StaticFactoryPolicy {
 public:
-	StaticFactoryPolicy() = default;
-	
 	std::unique_ptr<Component> MakeComponent(ComponentType type, Scene* scene) const noexcept {
 		auto it = std::lower_bound(_makers.begin(), _makers.end(), type,
 			[](const auto& elem, auto value) { return elem.first < value; });

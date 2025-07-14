@@ -5,10 +5,14 @@
 #include <scenegraph/utils/NonCopyable.h>
 #include <scenegraph/SceneObject.h>
 #include <scenegraph/Component.h>
+#include <scenegraph/SceneString.h>
 
 #include <memory>
+#include <string_view>
 #include <type_traits>
 #include <cstddef>
+
+class SceneString;
 
 using SceneAllocator = MonotonicAllocator<1 << 14>;
 
@@ -30,10 +34,15 @@ public:
 	Scene();
 	~Scene();
 	
+	// Public field
+	std::unique_ptr<Scene> nextScene;
+	
 	SceneObject AddObject() noexcept;
 
 	template <typename T, typename... Args>
 	std::unique_ptr<T> NewEntity(Passkey, Args&&... args) noexcept;
+	
+	std::unique_ptr<SceneString> NewString(std::string_view str) noexcept;
 	
 	// void Handler(SceneObject sceneObject, bool& stop)
 	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, bool&>>>
@@ -47,24 +56,6 @@ private:
 	StaticImpl<SceneNode, 5 * sizeof(void*)> _root;
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-
-template <typename T, typename... Args>
-std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
-	static_assert(sizeof(T) > 0, "Type is not complete");
-	static_assert(std::is_base_of_v<SceneEntity, T>);
-	
-	return std::unique_ptr<T>(std::construct_at(Allocate<T>(), std::forward<Args>(args)...));
-}
-
-template <typename Handler, typename>
-bool Scene::ForEachObject(Handler&& handler) noexcept {
-	return ForEachObject(
-		+[](SceneObject sceneObject, bool& stop, void* context) {
-			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, stop);
-		},
-		std::addressof(handler));
-}
-
+#include "Scene.inl"
 #include "SceneObject.inl"
 #include "Component.inl"

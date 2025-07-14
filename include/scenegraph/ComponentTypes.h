@@ -5,19 +5,32 @@
 #include <string_view>
 #include <cstdint>
 
-enum class ComponentType : uint32_t {};
+using HashType = uint32_t;
 
-constexpr ComponentType ComponentTypeFromName(std::string_view name) noexcept
-	{ return static_cast<ComponentType>(Murmur3Hash32(name)); }
-
-enum class ComponentMessage {
-	Added,        // Added to SceneObject
-	Removed,      // Removed from SceneObject
-	Apply         // Applying to SceneObject
+enum class HashNamespace {
+	Default,
+	Type,
+	Message
 };
 
-class SceneObject;
+enum class ComponentType : HashType;
+enum class ComponentMessage : HashType;
+
+constexpr ComponentType MakeComponentType(std::string_view name) noexcept
+	{ return static_cast<ComponentType>(Murmur3Hash32(name, static_cast<uint32_t>(HashNamespace::Type))); }
+
+constexpr ComponentMessage MakeComponentMessage(std::string_view name) noexcept
+	{ return static_cast<ComponentMessage>(Murmur3Hash32(name, static_cast<uint32_t>(HashNamespace::Message))); }
+
+#define DEFINE_COMPONENT_MESSAGE(Msg) \
+	constexpr auto Msg = MakeComponentMessage(#Msg);
+
+namespace ComponentMessages {
+	DEFINE_COMPONENT_MESSAGE(Added)      // Added to SceneObject
+	DEFINE_COMPONENT_MESSAGE(Removed)    // Removed from SceneObject
+	DEFINE_COMPONENT_MESSAGE(Apply)      // Apply to SceneObject
+}
 
 struct ComponentMessageParams {
-	SceneObject* sceneObject;
+	class SceneObject* sceneObject;
 };

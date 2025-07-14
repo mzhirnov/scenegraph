@@ -5,13 +5,12 @@
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/utils/ScopeGuard.h>
-#include <scenegraph/utils/MurmurHash.h>
 #include <scenegraph/utils/BitUtils.h>
 
 #include <iostream>
 #include <cstdio>
 
-class HelloComponent : public ComponentImpl<HelloComponent> {
+class HelloComponent final : public ComponentImpl<HelloComponent> {
 public:
 	DEFINE_COMPONENT_TYPE(HelloComponent)
 	
@@ -19,7 +18,7 @@ public:
 	~HelloComponent() { puts("~HelloComponent()"); }
 	
 private:
-	friend class ComponentImpl<HelloComponent>;
+	friend Super;
 	
 	void Added(SceneObject*) noexcept { puts("+ Added HelloComponent"); }
 	void Removed(SceneObject*) noexcept { puts("- Removed HelloComponent"); }
@@ -30,7 +29,7 @@ private:
 	}
 };
 
-class WorldComponent : public ComponentImpl<WorldComponent> {
+class WorldComponent final : public ComponentImpl<WorldComponent> {
 public:
 	DEFINE_COMPONENT_TYPE(WorldComponent)
 	
@@ -38,7 +37,7 @@ public:
 	~WorldComponent() { puts("~WorldComponent()"); }
 	
 private:
-	friend class ComponentImpl<WorldComponent>;
+	friend Super;
 	
 	void Added(SceneObject*) noexcept { puts("+ Added WorldComponent"); }
 	void Removed(SceneObject*) noexcept { puts("- Removed WorldComponent"); }
@@ -49,7 +48,7 @@ private:
 	}
 };
 
-class ExclamationComponent : public ComponentImpl<ExclamationComponent> {
+class ExclamationComponent final : public ComponentImpl<ExclamationComponent> {
 public:
 	DEFINE_COMPONENT_TYPE(ExclamationComponent)
 	
@@ -57,7 +56,7 @@ public:
 	~ExclamationComponent() { puts("~ExclamationComponent()"); }
 	
 private:
-	friend class ComponentImpl<ExclamationComponent>;
+	friend Super;
 	
 	void Added(SceneObject*) noexcept { puts("+ Added ExclamationComponent"); }
 	void Removed(SceneObject*) noexcept { puts("- Removed ExclamationComponent"); }
@@ -96,11 +95,19 @@ AutoObject::~AutoObject() { puts("~AutoObject()"); }
 int AutoObject::Value() const { return _impl->i; }
 
 int main() {
+#if 1
+	ComponentFactory<DynamicFactoryPolicy> factory1 {
+		{ HelloComponent::kType, HelloComponent::Make },
+		{ WorldComponent::kType, WorldComponent::Make },
+		{ ExclamationComponent::kType, ExclamationComponent::Make }
+	};
+#else
 	ComponentFactory<DynamicFactoryPolicy> factory1;
 	
 	factory1.Register<HelloComponent>();
 	factory1.Register<WorldComponent>();
 	factory1.Register<ExclamationComponent>();
+#endif
 	
 	using ComponentTypes = ComponentTypeList<
 		HelloComponent,
@@ -111,6 +118,11 @@ int main() {
 	ComponentFactory<StaticFactoryPolicy<ComponentTypes>> factory2;
 
 	auto scene = std::make_unique<Scene>();
+	
+	{
+		auto str = scene->NewString("Hello!");
+		puts(str->c_str());
+	}
 	
 	auto sceneObject = scene->AddObject();
 	sceneObject.AddComponent(factory1.MakeComponent("HelloComponent", scene.get()));
@@ -133,12 +145,12 @@ int main() {
 	puts("---");
 	scene->ForEachObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
-		sceneObject.BroadcastMessage(ComponentMessage::Apply, params);
+		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
 	puts("---");
 	scene->ForEachObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
-		sceneObject.BroadcastMessage(ComponentMessage::Apply, params);
+		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
 	
 	{

@@ -63,13 +63,13 @@ protected:
 private:
 	void DispatchMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 		switch (message) {
-		case ComponentMessage::Added:
+		case ComponentMessages::Added:
 			Derived()->Added(params.sceneObject);
 			break;
-		case ComponentMessage::Removed:
+		case ComponentMessages::Removed:
 			Derived()->Removed(params.sceneObject);
 			break;
-		case ComponentMessage::Apply:
+		case ComponentMessages::Apply:
 			Derived()->Apply(params.sceneObject);
 			break;
 		default:
@@ -87,7 +87,7 @@ private:
 
 #define DEFINE_COMPONENT_TYPE(T) \
 	static_assert(std::is_same_v<T::Super, ComponentImpl<T>>); \
-	static constexpr ComponentType kType = ComponentTypeFromName(#T); \
+	static constexpr ComponentType kType = MakeComponentType(#T); \
 	virtual ComponentType Type() const noexcept override { return kType; }
 
 ///

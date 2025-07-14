@@ -8,7 +8,7 @@ void ComponentList::BroadcastMessage(ComponentMessage message, ComponentMessageP
 		}
 		else {
 			it = Erase(it);
-			component.SendMessage(ComponentMessage::Removed, params);
+			component.SendMessage(ComponentMessages::Removed, params);
 			delete std::addressof(component);
 		}
 	}
