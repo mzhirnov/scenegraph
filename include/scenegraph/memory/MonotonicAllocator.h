@@ -48,6 +48,8 @@ public:
 	}
 	
 	~MonotonicPage() {
+		assert(this->_allocatedSize == 0 && "Destroying items storage with external pointers to it");
+		
 		// Destroy list inplace in the loop instead of auto recursion
 		while (nextPage) {
 			nextPage = std::move(nextPage->nextPage);
@@ -58,33 +60,35 @@ public:
 	void* TryAllocate(std::size_t size, std::size_t align) noexcept {
 		assert(align && !(align & (align - 1)) && "Align must be non zero power of two");
 		
-		// Allocated block begins here
-		const auto baseOffset = this->_currentOffset;
+		auto fnAlignPtr = [](std::byte* p, std::size_t align) {
+			const auto mask = align - 1;
+			return reinterpret_cast<std::byte*>((reinterpret_cast<uintptr_t>(p) + mask) & ~mask);
+		};
 		
-		// Aligned header
-		const auto headerAlignMask = alignof(ItemHeader) - 1;
-		const auto headerOffset = (this->_currentOffset + headerAlignMask) & ~headerAlignMask;
-		this->_currentOffset = static_cast<uint32_t>(headerOffset + sizeof(ItemHeader));
+		// Allocated block starts here
+		auto p = _bytes.data() + this->_currentOffset;
 		
-		// Aligned block
-		const auto blockAlignMask = align - 1;
-		const auto blockOffset = (this->_currentOffset + blockAlignMask) & ~blockAlignMask;
-		this->_currentOffset = static_cast<uint32_t>(blockOffset + size);
+		// Skip aligned header
+		p = fnAlignPtr(p, alignof(ItemHeader)) + sizeof(ItemHeader);
+		
+		// Align block (larger alignment would be ok because of power of two)
+		p = fnAlignPtr(p, align);
+		
+		auto newOffset = p + size - _bytes.data();
 		
 		// No free space
-		if (this->_currentOffset > _bytes.size()) {
-			this->_currentOffset = baseOffset;
+		if (static_cast<size_t>(newOffset) > _bytes.size()) {
 			return nullptr;
 		}
 		
-		auto p = _bytes.data() + blockOffset;
 		auto header = std::construct_at(reinterpret_cast<ItemHeader*>(p) - 1);
 		
 		// Offset from allocated block to page start
-		header->offset = static_cast<decltype(ItemHeader::offset)>(p - reinterpret_cast<std::byte*>(this));
-		header->size = static_cast<decltype(ItemHeader::size)>(size);
+		header->offset = static_cast<uint32_t>(p - reinterpret_cast<std::byte*>(this));
+		header->size = static_cast<uint32_t>(size);
 		
 		this->_allocatedSize += static_cast<int>(size);
+		this->_currentOffset = static_cast<uint32_t>(newOffset);
 		
 		return p;
 	}
