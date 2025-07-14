@@ -234,6 +234,9 @@ bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrde
 		return false;
 	}
 	
+	const auto doCallPreOrder = (callOrder & EnumCallOrder::PreOrder) == EnumCallOrder::PreOrder;
+	const auto doCallPostOrder = (callOrder & EnumCallOrder::PostOrder) == EnumCallOrder::PostOrder;
+	
 	auto GetFirstChildNode = (direction == EnumDirection::FirstToLast) ?
 		&Hierarchy::GetFirstChildNode :
 		&Hierarchy::GetLastChildNode;
@@ -247,8 +250,11 @@ bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrde
 	
 	while (currentNode && currentNode != static_cast<const NodeType*>(this) && !stop) {
 		// PreOrder
-		if ((callOrder & EnumCallOrder::PreOrder) == EnumCallOrder::PreOrder) {
+		if (doCallPreOrder) {
 			callback(EnumCallOrder::PreOrder, currentNode, stop, context);
+			if (stop) {
+				break;
+			}
 		}
 
 		if (auto firstChildNode = (currentNode->*GetFirstChildNode)()) {
@@ -256,24 +262,33 @@ bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrde
 		}
 		else if (auto nextSiblingNode = (currentNode->*GetNextSiblingNode)()) {
 			// PostOrder
-			if ((callOrder & EnumCallOrder::PostOrder) == EnumCallOrder::PostOrder) {
+			if (doCallPostOrder) {
 				callback(EnumCallOrder::PostOrder, currentNode, stop, context);
+				if (stop) {
+					break;
+				}
 			}
 			
 			currentNode = nextSiblingNode;
 		}
 		else {
 			// PostOrder
-			if ((callOrder & EnumCallOrder::PostOrder) == EnumCallOrder::PostOrder) {
+			if (doCallPostOrder) {
 				callback(EnumCallOrder::PostOrder, currentNode, stop, context);
+				if (stop) {
+					break;
+				}
 			}
 			
-			while (!(currentNode->*GetNextSiblingNode)() && currentNode != static_cast<const NodeType*>(this) && !stop) {
+			while (!(currentNode->*GetNextSiblingNode)() && currentNode != static_cast<const NodeType*>(this)) {
 				currentNode = currentNode->GetParentNode();
 				// PostOrder
-				if ((callOrder & EnumCallOrder::PostOrder) == EnumCallOrder::PostOrder) {
+				if (doCallPostOrder) {
 					if (currentNode != static_cast<const NodeType*>(this)) {
 						callback(EnumCallOrder::PostOrder, currentNode, stop, context);
+						if (stop) {
+							break;
+						}
 					}
 				}
 			}
