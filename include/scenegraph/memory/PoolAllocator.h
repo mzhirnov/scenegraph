@@ -17,8 +17,8 @@ public:
 	static_assert(std::numeric_limits<IndexType>::max() >= PageItems);
 	static_assert(sizeof(IndexType) <= Size);
 	
-	static constexpr std::size_t MaxSize = Size;
-	static constexpr std::size_t MaxAlign = Align;
+	static constexpr std::size_t kMaxSize = Size;
+	static constexpr std::size_t kMaxAlign = Align;
 	
 	// Public fields
 	std::unique_ptr<PoolPage> nextPage;

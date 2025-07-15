@@ -12,8 +12,8 @@ class BasicAllocator {
 public:
 	BasicAllocator() = default;
 	
-	static constexpr std::size_t MaxSize = Page::MaxSize;
-	static constexpr std::size_t MaxAlign = Page::MaxAlign;
+	static constexpr std::size_t kMaxSize = Page::kMaxSize;
+	static constexpr std::size_t kMaxAlign = Page::kMaxAlign;
 	
 	[[nodiscard]]
 	static BasicAllocator* GetAllocator(void* p) noexcept {
@@ -32,18 +32,18 @@ public:
 		static_assert(sizeof(T) > 0);
 		static_assert(!std::is_void_v<T>);
 		
-		static_assert(sizeof(T) <= MaxSize);
-		static_assert(alignof(T) <= MaxAlign);
+		static_assert(sizeof(T) <= kMaxSize);
+		static_assert(alignof(T) <= kMaxAlign);
 		
 		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
 	}
 	
 	[[nodiscard]]
 	void* Allocate(std::size_t size, std::size_t align) noexcept {
-		assert(size <= MaxSize);
-		assert(align <= MaxAlign);
+		assert(size <= kMaxSize);
+		assert(align <= kMaxAlign);
 		
-		if (size > MaxSize || align > MaxAlign) {
+		if (size > kMaxSize || align > kMaxAlign) {
 			return nullptr;
 		}
 		
