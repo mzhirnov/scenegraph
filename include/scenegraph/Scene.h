@@ -36,6 +36,8 @@ public:
 	// Public field
 	std::unique_ptr<Scene> nextScene;
 	
+	SceneObject GetRootObject() noexcept;
+	
 	SceneObject AddObject() noexcept;
 
 	template <typename T, typename... Args>
@@ -45,15 +47,12 @@ public:
 	
 	// void Handler(SceneObject sceneObject, bool& stop)
 	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, bool&>>>
-	bool ForEachRootObject(Handler&& handler) noexcept;
-	
-	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, EnumCallOrder, bool&>>>
-	bool WalkObjects(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) noexcept;
+	bool ForEachObject(Handler&& handler) noexcept;
 	
 private:
 	using EnumObjectsCallback = void(*)(SceneObject sceneObject, bool& stop, void* context);
 	
-	bool ForEachRootObject(EnumObjectsCallback callback, void* context) noexcept;
+	bool ForEachObject(EnumObjectsCallback callback, void* context) noexcept;
 	
 private:
 	// In order not to prevent disposing of first allocator's page by persistent root node,

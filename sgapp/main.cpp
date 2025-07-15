@@ -151,12 +151,12 @@ int main() {
 	});
 	
 	puts("---");
-	scene->ForEachRootObject([](SceneObject sceneObject, bool&) {
+	scene->ForEachObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
 		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
 	puts("---");
-	scene->ForEachRootObject([](SceneObject sceneObject, bool&) {
+	scene->ForEachObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
 		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
@@ -174,7 +174,7 @@ int main() {
 	b2.AppendChild().AddComponent<NameComponent>()->name = "c2.1";
 	b2.AppendChild().AddComponent<NameComponent>()->name = "c2.2";
 	
-	scene->WalkObjects(EnumDirection::FirstToLast, EnumCallOrder::PreOrder | EnumCallOrder::PostOrder,
+	scene->GetRootObject().WalkChildren(EnumDirection::FirstToLast, EnumCallOrder::PreOrder | EnumCallOrder::PostOrder,
 		[](SceneObject sceneObject, EnumCallOrder callOrder, bool&) {
 			sceneObject.ForEachComponent<NameComponent>([callOrder](SceneObject, NameComponent* c, bool&) {
 				std::cout << (callOrder == EnumCallOrder::PreOrder ? "pre " : "post ") << c->name << '\n';
