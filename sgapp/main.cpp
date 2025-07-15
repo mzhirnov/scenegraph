@@ -177,16 +177,7 @@ int main() {
 	scene->WalkObjects(EnumDirection::FirstToLast, EnumCallOrder::PreOrder | EnumCallOrder::PostOrder,
 		[](SceneObject sceneObject, EnumCallOrder callOrder, bool&) {
 			sceneObject.ForEachComponent<NameComponent>([callOrder](SceneObject, NameComponent* c, bool&) {
-				switch (callOrder) {
-				case EnumCallOrder::PreOrder:
-					std::cout << "pre ";
-					break;
-				case EnumCallOrder::PostOrder:
-					std::cout << "post ";
-					break;
-				}
-				
-				std::cout << c->name << '\n';
+				std::cout << (callOrder == EnumCallOrder::PreOrder ? "pre " : "post ") << c->name << '\n';
 			});
 		});
 	
