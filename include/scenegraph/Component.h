@@ -2,7 +2,7 @@
 
 #include <scenegraph/linked/ForwardList.h>
 #include <scenegraph/SceneEntity.h>
-#include <scenegraph/ComponentTypes.h>
+#include <scenegraph/SceneObject.h>
 
 #include <type_traits>
 #include <functional>
@@ -64,13 +64,13 @@ private:
 	void DispatchMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
 		switch (message) {
 		case ComponentMessages::Added:
-			Derived()->Added(params.sceneObject);
+			Derived()->Added(SceneObject{params.sceneNode});
 			break;
 		case ComponentMessages::Removed:
-			Derived()->Removed(params.sceneObject);
+			Derived()->Removed(SceneObject{params.sceneNode});
 			break;
 		case ComponentMessages::Apply:
-			Derived()->Apply(params.sceneObject);
+			Derived()->Apply(SceneObject{params.sceneNode});
 			break;
 		default:
 			DefaultDispatchMessage(message, params);
@@ -80,9 +80,9 @@ private:
 
 	T* Derived() noexcept { return static_cast<T*>(this); }
 	
-	void Added(SceneObject*) noexcept {}
-	void Removed(SceneObject*) noexcept {}
-	void Apply(SceneObject*) noexcept {}
+	void Added(SceneObject) noexcept {}
+	void Removed(SceneObject) noexcept {}
+	void Apply(SceneObject) noexcept {}
 };
 
 #define DEFINE_COMPONENT_TYPE(T) \

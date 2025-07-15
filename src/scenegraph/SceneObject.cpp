@@ -79,10 +79,46 @@ Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexc
 	
 	_node->AddComponent(*component);
 	
-	ComponentMessageParams params { this };
+	ComponentMessageParams params { GetNode() };
 	component->SendMessage(ComponentMessages::Added, params);
 	
 	return component.release();
+}
+
+bool SceneObject::ForEachObjectInParent(EnumObjectsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return false;
+	}
+	
+	bool stop = false;
+	
+	for (auto parent = _node->GetParentNode(); parent && !stop; parent = parent->GetParentNode()) {
+		callback(SceneObject{parent}, stop, context);
+	}
+	
+	return stop;
+}
+
+bool SceneObject::ForEachObjectInChildren(EnumObjectsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return false;
+	}
+	
+	return _node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
+		[callback, context](EnumCallOrder, SceneNode* node, bool& stop) {
+			callback(SceneObject{node}, stop, context);
+		});
+}
+
+bool SceneObject::WalkChildren(EnumDirection direction, EnumCallOrder callOrder, WalkObjectsCallback callback, void* context) noexcept {
+	if (!_node || !callback) {
+		return false;
+	}
+	
+	return _node->ForEachChildNode(direction, callOrder,
+		[callback, context](EnumCallOrder callOrder, SceneNode* node, bool& stop) {
+			callback(SceneObject{node}, callOrder, stop, context);
+		});
 }
 
 Component* SceneObject::FindComponent(ComponentType type) noexcept {
@@ -130,9 +166,9 @@ Component* SceneObject::FindComponentInChildren(ComponentType type) noexcept {
 	return component;
 }
 
-void SceneObject::ForEachComponent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+bool SceneObject::ForEachComponent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
 	if (!_node || !callback) {
-		return;
+		return false;
 	}
 	
 	bool stop = false;
@@ -145,11 +181,13 @@ void SceneObject::ForEachComponent(ComponentType type, EnumComponentsCallback ca
 			}
 		}
 	}
+	
+	return stop;
 }
 
-void SceneObject::ForEachComponentInParent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+bool SceneObject::ForEachComponentInParent(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
 	if (!_node || !callback) {
-		return;
+		return false;
 	}
 	
 	bool stop = false;
@@ -162,14 +200,16 @@ void SceneObject::ForEachComponentInParent(ComponentType type, EnumComponentsCal
 			}
 		}
 	}
+	
+	return stop;
 }
 
-void SceneObject::ForEachComponentInChildren(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
+bool SceneObject::ForEachComponentInChildren(ComponentType type, EnumComponentsCallback callback, void* context) noexcept {
 	if (!_node || !callback) {
-		return;
+		return false;
 	}
 	
-	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
+	return _node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
 		[type, callback, context](EnumCallOrder, SceneNode* node, bool& stop) {
 			SceneObject sceneObject{node};
 			for (auto& component : node->components) {
@@ -185,7 +225,7 @@ void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& 
 		return;
 	}
 	
-	params.sceneObject = this;
+	params.sceneNode = GetNode();
 	_node->components.BroadcastMessage(message, params);
 }
 
@@ -194,14 +234,12 @@ void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessagePar
 		return;
 	}
 	
-	params.sceneObject = this;
-	auto& components = _node->components;
-	components.BroadcastMessage(message, params);
+	params.sceneNode = GetNode();
+	_node->components.BroadcastMessage(message, params);
 	
 	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
 		[message, &params](EnumCallOrder, SceneNode* node, bool&) {
-			SceneObject sceneObject{node};
-			params.sceneObject = &sceneObject;
+			params.sceneNode = node;
 			node->components.BroadcastMessage(message, params);
 		});
 }

@@ -32,5 +32,27 @@ namespace ComponentMessages {
 }
 
 struct ComponentMessageParams {
-	class SceneObject* sceneObject;
+	class SceneNode* sceneNode;
 };
+
+enum class EnumDirection {
+	FirstToLast,
+	LastToFirst
+};
+
+enum class EnumCallOrder {
+	PreOrder  = 1 << 0,
+	PostOrder = 1 << 1
+};
+
+constexpr EnumCallOrder operator&(EnumCallOrder lhs, EnumCallOrder rhs) noexcept {
+	return static_cast<EnumCallOrder>(
+		static_cast<std::underlying_type_t<EnumCallOrder>>(lhs) &
+		static_cast<std::underlying_type_t<EnumCallOrder>>(rhs));
+}
+
+constexpr EnumCallOrder operator|(EnumCallOrder lhs, EnumCallOrder rhs) noexcept {
+	return static_cast<EnumCallOrder>(
+		static_cast<std::underlying_type_t<EnumCallOrder>>(lhs) |
+		static_cast<std::underlying_type_t<EnumCallOrder>>(rhs));
+}

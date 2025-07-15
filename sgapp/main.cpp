@@ -8,6 +8,7 @@
 #include <scenegraph/utils/BitUtils.h>
 
 #include <iostream>
+#include <string>
 #include <cstdio>
 
 class HelloComponent final : public ComponentImpl<HelloComponent> {
@@ -20,10 +21,10 @@ public:
 private:
 	friend Super;
 	
-	void Added(SceneObject*) noexcept { puts("+ Added HelloComponent"); }
-	void Removed(SceneObject*) noexcept { puts("- Removed HelloComponent"); }
+	void Added(SceneObject) noexcept { puts("+ Added HelloComponent"); }
+	void Removed(SceneObject) noexcept { puts("- Removed HelloComponent"); }
 	
-	void Apply(SceneObject*) noexcept {
+	void Apply(SceneObject) noexcept {
 		puts("Hello");
 		//Remove();
 	}
@@ -39,10 +40,10 @@ public:
 private:
 	friend Super;
 	
-	void Added(SceneObject*) noexcept { puts("+ Added WorldComponent"); }
-	void Removed(SceneObject*) noexcept { puts("- Removed WorldComponent"); }
+	void Added(SceneObject) noexcept { puts("+ Added WorldComponent"); }
+	void Removed(SceneObject) noexcept { puts("- Removed WorldComponent"); }
 	
-	void Apply(SceneObject*) noexcept {
+	void Apply(SceneObject) noexcept {
 		puts("World");
 		//Remove();
 	}
@@ -58,13 +59,20 @@ public:
 private:
 	friend Super;
 	
-	void Added(SceneObject*) noexcept { puts("+ Added ExclamationComponent"); }
-	void Removed(SceneObject*) noexcept { puts("- Removed ExclamationComponent"); }
+	void Added(SceneObject) noexcept { puts("+ Added ExclamationComponent"); }
+	void Removed(SceneObject) noexcept { puts("- Removed ExclamationComponent"); }
 	
-	void Apply(SceneObject*) noexcept {
+	void Apply(SceneObject) noexcept {
 		puts("!");
 		Remove();
 	}
+};
+
+class NameComponent final : public ComponentImpl<NameComponent> {
+public:
+	DEFINE_COMPONENT_TYPE(NameComponent)
+	
+	std::string name;
 };
 
 class AutoObject {
@@ -121,7 +129,7 @@ int main() {
 	
 	{
 		auto str = scene->NewString("Hello!");
-		puts(str->c_str());
+		std::cout << str->ToStringView() << '\n';
 	}
 	
 	auto sceneObject = scene->AddObject();
@@ -143,15 +151,44 @@ int main() {
 	});
 	
 	puts("---");
-	scene->ForEachObject([](SceneObject sceneObject, bool&) {
+	scene->ForEachRootObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
 		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
 	puts("---");
-	scene->ForEachObject([](SceneObject sceneObject, bool&) {
+	scene->ForEachRootObject([](SceneObject sceneObject, bool&) {
 		ComponentMessageParams params;
 		sceneObject.BroadcastMessage(ComponentMessages::Apply, params);
 	});
+	
+	auto a = sceneObject.AppendChild();
+	auto b1 = a.AppendChild();
+	auto b2 = a.AppendChild();
+	
+	a.AddComponent<NameComponent>()->name = "a";
+	b1.AddComponent<NameComponent>()->name = "b1";
+	b2.AddComponent<NameComponent>()->name = "b2";
+	
+	b1.AppendChild().AddComponent<NameComponent>()->name = "c1.1";
+	b1.AppendChild().AddComponent<NameComponent>()->name = "c1.2";
+	b2.AppendChild().AddComponent<NameComponent>()->name = "c2.1";
+	b2.AppendChild().AddComponent<NameComponent>()->name = "c2.2";
+	
+	scene->WalkObjects(EnumDirection::FirstToLast, EnumCallOrder::PreOrder | EnumCallOrder::PostOrder,
+		[](SceneObject sceneObject, EnumCallOrder callOrder, bool&) {
+			sceneObject.ForEachComponent<NameComponent>([callOrder](SceneObject, NameComponent* c, bool&) {
+				switch (callOrder) {
+				case EnumCallOrder::PreOrder:
+					std::cout << "pre ";
+					break;
+				case EnumCallOrder::PostOrder:
+					std::cout << "post ";
+					break;
+				}
+				
+				std::cout << c->name << '\n';
+			});
+		});
 	
 	{
 		PoolAllocator<AutoObject, 2> allocator;

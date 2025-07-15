@@ -21,7 +21,7 @@ SceneObject Scene::AddObject() noexcept {
 	return SceneObject{_root->AppendChildNode(NewEntity<SceneNode>(Passkey{}))};
 }
 
-bool Scene::ForEachObject(EnumObjectsCallback callback, void* context) noexcept {
+bool Scene::ForEachRootObject(EnumObjectsCallback callback, void* context) noexcept {
 	if (!callback) {
 		return false;
 	}

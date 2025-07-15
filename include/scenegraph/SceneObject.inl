@@ -1,5 +1,32 @@
 #pragma once
 
+template <typename Handler, typename>
+bool SceneObject::ForEachObjectInParent(Handler&& handler) noexcept {
+	return ForEachObjectInParent(
+		+[](SceneObject sceneObject, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, stop);
+		},
+		std::addressof(handler));
+}
+
+template <typename Handler, typename>
+bool SceneObject::ForEachObjectInChildren(Handler&& handler) noexcept {
+	return ForEachObjectInChildren(
+		+[](SceneObject sceneObject, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, stop);
+		},
+		std::addressof(handler));
+}
+
+template <typename Handler, typename>
+bool SceneObject::WalkChildren(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) noexcept {
+	return WalkChildren(direction, callOrder,
+		+[](SceneObject sceneObject, EnumCallOrder callOrder, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, callOrder, stop);
+		},
+		std::addressof(handler));
+}
+
 template <typename T>
 T* SceneObject::AddComponent() noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
@@ -33,10 +60,10 @@ T* SceneObject::FindComponentInChildren() noexcept {
 }
 
 template <typename T, typename Handler, typename>
-void SceneObject::ForEachComponent(Handler&& handler) noexcept {
+bool SceneObject::ForEachComponent(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
-	ForEachComponent(T::kType,
+	return ForEachComponent(T::kType,
 		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
 			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
 		},
@@ -44,10 +71,10 @@ void SceneObject::ForEachComponent(Handler&& handler) noexcept {
 }
 
 template <typename T, typename Handler, typename>
-void SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
+bool SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
-	ForEachComponentInParent(T::kType,
+	return ForEachComponentInParent(T::kType,
 		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
 			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
 		},
@@ -55,10 +82,10 @@ void SceneObject::ForEachComponentInParent(Handler&& handler) noexcept {
 }
 
 template <typename T, typename Handler, typename>
-void SceneObject::ForEachComponentInChildren(Handler&& handler) noexcept {
+bool SceneObject::ForEachComponentInChildren(Handler&& handler) noexcept {
 	static_assert(std::is_base_of_v<ComponentImpl<T>, T>);
 	
-	ForEachComponentInChildren(T::kType,
+	return ForEachComponentInChildren(T::kType,
 		+[](SceneObject sceneObject, Component* component, bool& stop, void* context) {
 			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, static_cast<T*>(component), stop);
 		},

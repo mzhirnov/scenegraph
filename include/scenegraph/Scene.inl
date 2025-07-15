@@ -9,10 +9,15 @@ std::unique_ptr<T> Scene::NewEntity(Passkey, Args&&... args) noexcept {
 }
 
 template <typename Handler, typename>
-bool Scene::ForEachObject(Handler&& handler) noexcept {
-	return ForEachObject(
+bool Scene::ForEachRootObject(Handler&& handler) noexcept {
+	return ForEachRootObject(
 		+[](SceneObject sceneObject, bool& stop, void* context) {
 			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), sceneObject, stop);
 		},
 		std::addressof(handler));
+}
+
+template <typename Handler, typename>
+bool Scene::WalkObjects(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) noexcept {
+	return SceneObject{_root.GetPtr()}.WalkChildren(direction, callOrder, std::forward<Handler>(handler));
 }

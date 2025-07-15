@@ -21,8 +21,6 @@ using SceneAllocator = MonotonicAllocator<1 << 14>;
 ///
 class Scene : public SceneAllocator {
 public:
-	using EnumObjectsCallback = void(*)(SceneObject sceneObject, bool& stop, void* context);
-	
 	class Passkey : NonCopyableNonMovable {
 		friend class Scene;
 		friend class SceneObject;
@@ -32,6 +30,7 @@ public:
 	};
 	
 	Scene();
+	
 	~Scene();
 	
 	// Public field
@@ -46,9 +45,15 @@ public:
 	
 	// void Handler(SceneObject sceneObject, bool& stop)
 	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, bool&>>>
-	bool ForEachObject(Handler&& handler) noexcept;
+	bool ForEachRootObject(Handler&& handler) noexcept;
 	
-	bool ForEachObject(EnumObjectsCallback callback, void* context) noexcept;
+	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, SceneObject, EnumCallOrder, bool&>>>
+	bool WalkObjects(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) noexcept;
+	
+private:
+	using EnumObjectsCallback = void(*)(SceneObject sceneObject, bool& stop, void* context);
+	
+	bool ForEachRootObject(EnumObjectsCallback callback, void* context) noexcept;
 	
 private:
 	// In order not to prevent disposing of first allocator's page by persistent root node,

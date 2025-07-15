@@ -11,6 +11,7 @@
 class SceneNode : public Hierarchy<SceneNode>, public SceneEntity {
 public:
 	SceneNode() = default;
+	
 	~SceneNode();
 	
 	SceneNode(const SceneNode&) = delete;
