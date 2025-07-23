@@ -180,20 +180,20 @@ int main() {
 			});
 		});
 	
-	{
-		PoolAllocator<AutoObject, 2> allocator;
+	auto fnTestAllocator = [](auto& allocator, const char* name) {
+		std::cout << ">>> " << name << '\n';
 		
-		auto p = allocator.Allocate();
+		auto p = allocator.template Allocate<AutoObject>();
 		std::cout << p << '\n';
 		
 		{
-			auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
+			auto obj = std::construct_at(allocator.template Allocate<AutoObject>());
 			std::cout << obj << " align: " << alignof(AutoObject) << " size: " << sizeof(AutoObject) << " value: " << obj->Value() << '\n';
 			std::destroy_at(obj);
 			allocator.Deallocate(obj);
 		}
 		{
-			auto obj = std::construct_at(static_cast<AutoObject*>(allocator.Allocate()));
+			auto obj = std::construct_at(allocator.template Allocate<AutoObject>());
 			std::cout << obj << '\n';
 			std::destroy_at(obj);
 			allocator.Deallocate(obj);
@@ -203,25 +203,29 @@ int main() {
 		
 		void *o1, *o2, *o3;
 		
-		std::cout << (o1 = allocator.Allocate()) << '\n';
-		std::cout << (o2 = allocator.Allocate()) << '\n';
-		std::cout << (o3 = allocator.Allocate()) << '\n';
+		std::cout << (o1 = allocator.template Allocate<int>()) << '\n';
+		std::cout << (o2 = allocator.template Allocate<int>()) << '\n';
+		std::cout << (o3 = allocator.template Allocate<int>()) << '\n';
 		
 		allocator.Deallocate(o1);
 		allocator.Deallocate(o2);
 		allocator.Deallocate(o3);
-	}
-	
-	}
-	}
+		
+		std::cout << "<<< " << name << '\n';
+	};
 	
 	{
-		using Allocator = MonotonicAllocator<64>;
-		
-		Allocator allocator;
-		
-		auto* p = allocator.Allocate<int>();
-		allocator.Deallocate(p);
+		PoolAllocator<AutoObject, 2> allocator;
+		fnTestAllocator(allocator, "PoolAllocator");
+	}
+	{
+		MonotonicAllocator<128> allocator;
+		fnTestAllocator(allocator, "MonotonicAllocator");
+	}
+	
+	}
+	}
+	
 	}
 	
 	return 0;

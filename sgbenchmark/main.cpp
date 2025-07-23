@@ -114,7 +114,6 @@ static void BM_PoolAllocator(benchmark::State& state) {
 		}
 	}
 }
-
 BENCHMARK(BM_PoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
 static void BM_MonotonicAllocator(benchmark::State& state) {
@@ -140,8 +139,57 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 		}
 	}
 }
-
 BENCHMARK(BM_MonotonicAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
+
+static void BM_StaticPoolAllocator(benchmark::State& state) {
+	const auto size = state.range();
+	std::vector<Node*> nodes(static_cast<size_t>(size));
+	StaticPoolAllocator<Node, 1 << 15> allocator;
+	
+	for (auto _ : state) {
+		for (auto& node : nodes) {
+			node = allocator.Allocate<Node>();
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+		
+		for (auto& node : nodes) {
+			node = allocator.Allocate<Node>();
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+	}
+}
+BENCHMARK(BM_StaticPoolAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 15);
+
+static void BM_StaticMonotonicAllocator(benchmark::State& state) {
+	const auto size = state.range();
+	std::vector<Node*> nodes(static_cast<size_t>(size));
+	StaticMonotonicAllocator<(1 << 15) * sizeof(Node) + 64> allocator;
+	
+	for (auto _ : state) {
+		for (auto& node : nodes) {
+			node = allocator.Allocate<Node>();
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+		
+		for (auto& node : nodes) {
+			node = allocator.Allocate<Node>();
+		}
+		
+		for (auto& node : nodes) {
+			allocator.Deallocate(node);
+		}
+	}
+}
+BENCHMARK(BM_StaticMonotonicAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 15);
 
 static void BM_StdAllocator(benchmark::State& state) {
 	const auto size = state.range();
@@ -166,7 +214,6 @@ static void BM_StdAllocator(benchmark::State& state) {
 		}
 	}
 }
-
 BENCHMARK(BM_StdAllocator)->RangeMultiplier(2)->Range(1 << 8, 1 << 16);
 
 BENCHMARK_MAIN();

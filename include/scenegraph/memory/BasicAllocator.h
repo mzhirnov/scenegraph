@@ -113,3 +113,66 @@ private:
 	std::unique_ptr<Page> _firstPage;
 	std::unique_ptr<Page> _firstFreePage;
 };
+
+///
+/// Basic static allocator
+///
+template <typename Page>
+class BasicStaticAllocator {
+public:
+	BasicStaticAllocator() = default;
+	
+	static constexpr std::size_t kMaxSize = Page::kMaxSize;
+	static constexpr std::size_t kMaxAlign = Page::kMaxAlign;
+	
+	[[nodiscard]]
+	static BasicStaticAllocator* GetAllocator(void* p) noexcept {
+		auto page = Page::GetPage(p);
+		return static_cast<BasicStaticAllocator*>(page->Allocator());
+	}
+	
+	[[nodiscard]]
+	static std::size_t GetSize(const void* p) noexcept {
+		return Page::GetSize(p);
+	}
+	
+	template <typename T>
+	[[nodiscard]] T* Allocate() noexcept {
+		// Type must be complete
+		static_assert(sizeof(T) > 0);
+		static_assert(!std::is_void_v<T>);
+		
+		static_assert(sizeof(T) <= kMaxSize);
+		static_assert(alignof(T) <= kMaxAlign);
+		
+		return static_cast<T*>(Allocate(sizeof(T), alignof(T)));
+	}
+	
+	[[nodiscard]]
+	void* Allocate(std::size_t size, std::size_t align) noexcept {
+		assert(size <= kMaxSize);
+		assert(align <= kMaxAlign);
+		
+		if (size > kMaxSize || align > kMaxAlign) {
+			return nullptr;
+		}
+		
+		return _page.TryAllocate(size, align);
+	}
+	
+	void Deallocate(void* p) noexcept {
+		// Deallocating nullptr must be ok
+		if (!p) {
+			return;
+		}
+		
+		assert(Page::GetPage(p) == std::addressof(_page));
+		
+		_page.Deallocate(p);
+	}
+	
+	void DisposeFreePages() noexcept {}
+
+private:
+	Page _page{this};
+};

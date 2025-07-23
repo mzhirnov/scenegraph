@@ -135,16 +135,18 @@ private:
 	std::array<ItemStorage, PageItems> _items;
 };
 
+// PoolAllocator
+
 template <std::size_t Size, std::size_t Align, std::size_t PageItems>
 using BasicPoolAllocator = BasicAllocator<PoolPage<Size, Align, PageItems>>;
 
 template <typename T, std::size_t PageItems>
-class PoolAllocator : public BasicPoolAllocator<sizeof(T), alignof(T), PageItems> {
-public:
-	using BasicPoolAllocator<sizeof(T), alignof(T), PageItems>::Allocate;
-	
-	[[nodiscard]]
-	void* Allocate() noexcept {
-		return Allocate(sizeof(T), alignof(T));
-	}
-};
+using PoolAllocator = BasicPoolAllocator<sizeof(T), alignof(T), PageItems>;
+
+// StaticPoolAllocator
+
+template <std::size_t Size, std::size_t Align, std::size_t PageItems>
+using BasicStaticPoolAllocator = BasicStaticAllocator<PoolPage<Size, Align, PageItems>>;
+
+template <typename T, std::size_t PageItems>
+using StaticPoolAllocator = BasicStaticPoolAllocator<sizeof(T), alignof(T), PageItems>;

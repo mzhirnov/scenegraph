@@ -279,18 +279,18 @@ TEST(PoolAllocator, Allocate) {
 	
 	Allocator allocator;
 	
-	auto p = allocator.Allocate();
+	auto p = allocator.Allocate<int>();
 	void* addr1 = p;
 	void* addr2;
 	void* addr3;
 	
 	{
-		addr2 = allocator.Allocate();
+		addr2 = allocator.Allocate<int>();
 		EXPECT_NE(addr1, addr2);
 		allocator.Deallocate(addr2);
 	}
 	{
-		addr3 = allocator.Allocate();
+		addr3 = allocator.Allocate<int>();
 		EXPECT_NE(addr1, addr3);
 		allocator.Deallocate(addr3);
 	}
@@ -299,9 +299,9 @@ TEST(PoolAllocator, Allocate) {
 	
 	allocator.Deallocate(p);
 	
-	auto p1 = allocator.Allocate();
-	auto p2 = allocator.Allocate();
-	auto p3 = allocator.Allocate();
+	auto p1 = allocator.Allocate<int>();
+	auto p2 = allocator.Allocate<int>();
+	auto p3 = allocator.Allocate<int>();
 	
 	EXPECT_EQ(addr1, p1);
 	EXPECT_EQ(addr2, p2);

@@ -35,7 +35,7 @@ add_cxx_compiler_flag(-pedantic)
 add_cxx_compiler_flag(-pedantic-errors)
 add_cxx_compiler_flag(-fstrict-aliasing)
 
-#add_cxx_compiler_flag(-fno-exceptions)
+add_cxx_compiler_flag(-fno-exceptions)
 add_cxx_compiler_flag(-flto)
 add_cxx_compiler_flag(-Wno-lto-type-mismatch)
 

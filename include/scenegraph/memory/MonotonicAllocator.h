@@ -147,3 +147,6 @@ private:
 
 template <std::size_t PageBytes>
 using MonotonicAllocator = BasicAllocator<MonotonicPage<PageBytes>>;
+
+template <std::size_t Bytes>
+using StaticMonotonicAllocator = BasicStaticAllocator<MonotonicPage<Bytes>>;
