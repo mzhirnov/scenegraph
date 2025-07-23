@@ -7,17 +7,17 @@
 
 #include <string>
 
-class node : public ForwardListNode<> {
+class Node : public ForwardListNode<> {
 public:
-	explicit node(std::string_view name) : name{name} {}
+	explicit Node(std::string_view name) : name{name} {}
 
 public:
 	std::string name;
 };
 
-class object : public Hierarchy<object> {
+class Object : public Hierarchy<Object> {
 public:
-	explicit object(std::string_view name) : name{name} {}
+	explicit Object(std::string_view name) : name{name} {}
 
 public:
 	std::string name;
@@ -27,9 +27,9 @@ template <typename List>
 void TestPushFront() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -51,9 +51,9 @@ template <typename List>
 void TestPushBack() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushBack(n1);
 	list.PushBack(n2);
@@ -75,9 +75,9 @@ template <typename List>
 void TestReverse() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -101,9 +101,9 @@ template <typename List>
 void TestRotate() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -124,9 +124,9 @@ template <typename List>
 void TestErase() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -161,9 +161,9 @@ template <typename List>
 void TestErase2() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -198,9 +198,9 @@ template <typename List>
 void TestErase3() {
 	List list;
 
-	node n1{"n1"};
-	node n2{"n2"};
-	node n3{"n3"};
+	Node n1{"n1"};
+	Node n2{"n2"};
+	Node n3{"n3"};
 
 	list.PushFront(n1);
 	list.PushFront(n2);
@@ -237,8 +237,8 @@ void TestErase3() {
 	}
 }
 
-using list = ForwardList<node>;
-using circular_list = CircularForwardList<node>;
+using list = ForwardList<Node>;
+using circular_list = CircularForwardList<Node>;
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -262,14 +262,16 @@ TEST(CircularList, Erase3) { TestErase3<circular_list>(); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-TEST(Hierarchy, Create) {
-	object root{"root"};
+TEST(Hierarchy, Init) {
+	Object root{"root"};
 	
 	ASSERT_EQ(root.GetParentNode(), nullptr);
 	ASSERT_EQ(root.GetFirstChildNode(), nullptr);
 	ASSERT_EQ(root.GetPrevSiblingNode(), nullptr);
 	ASSERT_EQ(root.GetNextSiblingNode(), nullptr);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 TEST(PoolAllocator, Allocate) {
 	using Allocator = PoolAllocator<int, 2>;
@@ -316,6 +318,8 @@ TEST(PoolAllocator, Allocate) {
 	allocator.Deallocate(p2);
 	allocator.Deallocate(p3);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 TEST(MonotonicAllocator, GetAllocator) {
 	using Allocator = MonotonicAllocator<48>;

@@ -10,6 +10,10 @@ class Component;
 template <typename> class ComponentImpl;
 
 using ComponentMakerType = std::unique_ptr<Component> (*)(Scene* scene) noexcept;
+using ComponentInfoType = std::pair<ComponentType, ComponentMakerType>;
+
+template <typename T>
+constexpr ComponentInfoType ComponentInfo = ComponentInfoType{T::kType, T::Make};
 
 ///
 ///
@@ -31,7 +35,7 @@ class DynamicFactoryPolicy {
 public:
 	DynamicFactoryPolicy() = default;
 	
-	DynamicFactoryPolicy(std::initializer_list<std::pair<ComponentType, ComponentMakerType>> list)
+	DynamicFactoryPolicy(std::initializer_list<ComponentInfoType> list)
 	{
 		_makers.reserve(list.size());
 		
@@ -55,7 +59,7 @@ public:
 	std::unique_ptr<Component> MakeComponent(ComponentType type, Scene* scene) const noexcept;
 	
 protected:
-	std::vector<std::pair<ComponentType, ComponentMakerType>> _makers;
+	std::vector<ComponentInfoType> _makers;
 };
 
 ///
@@ -66,7 +70,7 @@ class ComponentTypeList {
 public:
 	static_assert((std::is_base_of_v<Component, Ts> && ...));
 	
-	using ArrayType = std::array<std::pair<ComponentType, ComponentMakerType>, sizeof...(Ts)>;
+	using ArrayType = std::array<ComponentInfoType, sizeof...(Ts)>;
 	
 	static constexpr auto ToSortedArray() noexcept {
 		ArrayType arr = { std::make_pair(Ts::kType, Ts::Make)... };

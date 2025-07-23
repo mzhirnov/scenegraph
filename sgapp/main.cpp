@@ -105,9 +105,9 @@ int AutoObject::Value() const { return _impl->i; }
 int main() {
 #if 1
 	ComponentFactory<DynamicFactoryPolicy> factory1 {
-		{ HelloComponent::kType, HelloComponent::Make },
-		{ WorldComponent::kType, WorldComponent::Make },
-		{ ExclamationComponent::kType, ExclamationComponent::Make }
+		ComponentInfo<HelloComponent>,
+		ComponentInfo<WorldComponent>,
+		ComponentInfo<ExclamationComponent>
 	};
 #else
 	ComponentFactory<DynamicFactoryPolicy> factory1;
@@ -175,8 +175,8 @@ int main() {
 	b2.AppendChild().AddComponent<NameComponent>()->name = "c2.2";
 	
 	scene->GetRootObject().WalkChildren(EnumDirection::FirstToLast, EnumCallOrder::PreOrder | EnumCallOrder::PostOrder,
-		[](SceneObject sceneObject, EnumCallOrder callOrder, bool&) {
-			sceneObject.ForEachComponent<NameComponent>([callOrder](SceneObject, NameComponent* c, bool&) {
+		[](SceneObject sceneObject, EnumCallOrder callOrder, bool& stop) {
+			stop = sceneObject.ForEachComponent<NameComponent>([callOrder](SceneObject, NameComponent* c, bool&) {
 				std::cout << (callOrder == EnumCallOrder::PreOrder ? "pre " : "post ") << c->name << '\n';
 			});
 		});
