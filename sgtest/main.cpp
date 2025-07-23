@@ -4,6 +4,7 @@
 #include <scenegraph/linked/Hierarchy.h>
 #include <scenegraph/memory/PoolAllocator.h>
 #include <scenegraph/memory/MonotonicAllocator.h>
+#include <scenegraph/utils/ScopeGuard.h>
 
 #include <string>
 
@@ -351,4 +352,30 @@ TEST(MonotonicAllocator, GetAllocator) {
 	
 	allocator.Deallocate(p3);
 	allocator.Deallocate(p4);
+}
+
+TEST(ScopeGuard, Exit) {
+	std::string out;
+	
+	TRY	{
+		ON_SCOPE_EXIT_SUCCESS(&out) { out += "1"; };
+		ON_SCOPE_EXIT_FAILURE(&out) { out += "2"; };
+		ON_SCOPE_EXIT(&out) { out += "3"; };
+		
+		ScopeGuard guard = [&out] {
+			out += "4";
+		};
+		
+		guard.Cancel();
+		
+		THROW(1);
+	}
+	CATCH_ALL() {
+	}
+	
+#ifdef __cpp_exceptions
+	EXPECT_EQ(out, "32");
+#else
+	EXPECT_EQ(out, "31");
+#endif
 }

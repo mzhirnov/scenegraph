@@ -4,7 +4,6 @@
 #include <scenegraph/memory/PoolAllocator.h>
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
-#include <scenegraph/utils/ScopeGuard.h>
 #include <scenegraph/utils/BitUtils.h>
 
 #include <iostream>
@@ -213,20 +212,7 @@ int main() {
 		allocator.Deallocate(o3);
 	}
 	
-	TRY	{
-		ON_SCOPE_EXIT_SUCCESS() { puts("scope_exit 1"); };
-		ON_SCOPE_EXIT_FAILURE() { puts("scope_exit 2"); };
-		ON_SCOPE_EXIT() { puts("scope_exit 3"); };
-		
-		ScopeGuard guard = [] {
-			puts("scope_exit 4");
-		};
-		
-		guard.Cancel();
-		
-		THROW(1);
 	}
-	CATCH_ALL() {
 	}
 	
 	{
