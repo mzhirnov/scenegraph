@@ -323,7 +323,7 @@ TEST(PoolAllocator, Allocate) {
 //---------------------------------------------------------------------------------------------------------------------
 
 TEST(MonotonicAllocator, GetAllocator) {
-	using Allocator = MonotonicAllocator<48>;
+	using Allocator = MonotonicAllocator<64>;
 	
 	Allocator allocator;
 	
