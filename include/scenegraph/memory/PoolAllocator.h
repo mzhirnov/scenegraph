@@ -96,11 +96,6 @@ public:
 		return page;
 	}
 	
-	[[nodiscard]]
-	static std::size_t GetSize(const void*) noexcept {
-		return Size;
-	}
-	
 private:
 	struct ItemStorage {
 		union {
@@ -129,10 +124,10 @@ private:
 	}
 	
 private:
+	std::array<ItemStorage, PageItems> _items;
 	void* _allocator = nullptr;
 	IndexType _freeListHead = 0;
 	IndexType _allocatedCount = 0;
-	std::array<ItemStorage, PageItems> _items;
 };
 
 // PoolAllocator
