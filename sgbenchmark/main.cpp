@@ -3,6 +3,7 @@
 #include <scenegraph/linked/ForwardList.h>
 #include <scenegraph/memory/PoolAllocator.h>
 #include <scenegraph/memory/MonotonicAllocator.h>
+#include <scenegraph/utils/IteratorUtils.h>
 
 #include <vector>
 
@@ -105,7 +106,7 @@ static void BM_PoolAllocator(benchmark::State& state) {
 			allocator.Deallocate(node);
 		}
 		
-		for (auto& node : nodes) {
+		for (auto& node : ReverseRange(nodes)) {
 			node = allocator.Allocate<Node>();
 		}
 		
@@ -130,7 +131,7 @@ static void BM_MonotonicAllocator(benchmark::State& state) {
 			allocator.Deallocate(node);
 		}
 		
-		for (auto& node : nodes) {
+		for (auto& node : ReverseRange(nodes)) {
 			node = allocator.Allocate<Node>();
 		}
 		
@@ -155,7 +156,7 @@ static void BM_StaticPoolAllocator(benchmark::State& state) {
 			allocator.Deallocate(node);
 		}
 		
-		for (auto& node : nodes) {
+		for (auto& node : ReverseRange(nodes)) {
 			node = allocator.Allocate<Node>();
 		}
 		
@@ -180,7 +181,7 @@ static void BM_StaticMonotonicAllocator(benchmark::State& state) {
 			allocator.Deallocate(node);
 		}
 		
-		for (auto& node : nodes) {
+		for (auto& node : ReverseRange(nodes)) {
 			node = allocator.Allocate<Node>();
 		}
 		
@@ -205,7 +206,7 @@ static void BM_StdAllocator(benchmark::State& state) {
 			allocator.deallocate(node, 1);
 		}
 		
-		for (auto& node : nodes) {
+		for (auto& node : ReverseRange(nodes)) {
 			node = allocator.allocate(1);
 		}
 		
