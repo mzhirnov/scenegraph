@@ -92,9 +92,17 @@ public:
 				_firstPage->prevPage = page->prevPage;
 			}
 			
+			std::unique_ptr<Page> emptyPage;
+			
 			// Remove from busy list
-			auto emptyPage = std::move(page->prevPage->nextPage);
-			page->prevPage->nextPage = std::move(page->nextPage);
+			if (page->prevPage->nextPage) {
+				emptyPage = std::move(page->prevPage->nextPage);
+				page->prevPage->nextPage = std::move(page->nextPage);
+			}
+			else {
+				emptyPage = std::move(_firstPage);
+				_firstPage = std::move(emptyPage->nextPage);
+			}
 			
 			// Add to free list
 			emptyPage->nextPage = std::move(_firstFreePage);
