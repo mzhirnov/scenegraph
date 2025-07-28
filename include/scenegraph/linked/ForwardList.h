@@ -3,11 +3,11 @@
 #include <type_traits>
 #include <iterator>
 #include <utility>
+#include <cassert>
 
-//---------------------------------------------------------------------------------------------------------------------
-// ForwardListNode
-//---------------------------------------------------------------------------------------------------------------------
-
+///
+/// ForwardListNode
+///
 template <typename Tag = void>
 class ForwardListNode {
 public:
@@ -30,10 +30,9 @@ private:
 	ForwardListNode* _next{};
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-// ForwardList
-//---------------------------------------------------------------------------------------------------------------------
-
+///
+/// ForwardList
+///
 template <typename T, typename Tag = void>
 class ForwardList {
 private:
@@ -60,7 +59,8 @@ public:
 	
 	constexpr ForwardList(ForwardList&& rhs) noexcept
 		: _head{std::exchange(rhs._head, {})}
-	{}
+	{
+	}
 	
 	constexpr ForwardList& operator=(ForwardList&& rhs) noexcept {
 		if (&rhs != this) {
@@ -69,29 +69,28 @@ public:
 		return *this;
 	}
 	
-	constexpr iterator begin() noexcept { return iterator{&_head}; }
+	constexpr iterator begin() noexcept { return iterator{_head ? &_head : nullptr}; }
+	constexpr const_iterator begin() const noexcept { return const_iterator{_head ? &_head : nullptr}; }
+	constexpr const_iterator cbegin() const noexcept { return const_iterator{_head ? &_head : nullptr}; }
+	
 	constexpr iterator end() noexcept { return iterator{}; }
-	
-	constexpr const_iterator begin() const noexcept { return const_iterator{&_head}; }
 	constexpr const_iterator end() const noexcept { return const_iterator{}; }
-	
-	constexpr const_iterator cbegin() const noexcept { return const_iterator{&_head}; }
 	constexpr const_iterator cend() const noexcept { return const_iterator{}; }
 	
 	constexpr bool Empty() const noexcept { return !_head; }
 	constexpr void Clear() noexcept { _head = {}; }
 
-	constexpr T& Front() noexcept { return static_cast<T&>(*_head); }
-	constexpr const T& Front() const noexcept { return static_cast<const T&>(*_head); }
+	constexpr T& Front() noexcept { assert(_head); return static_cast<T&>(*_head); }
+	constexpr const T& Front() const noexcept { assert(_head); return static_cast<const T&>(*_head); }
 
-	constexpr T& Back() noexcept { return static_cast<T&>(*Tail()); }
-	constexpr const T& Back() const noexcept { return static_cast<const T&>(*Tail()); }
+	constexpr T& Back() noexcept { assert(_head); return static_cast<T&>(*Tail()); }
+	constexpr const T& Back() const noexcept { assert(_head); return static_cast<const T&>(*Tail()); }
 
 	constexpr void PushFront(T& node) noexcept { node._next = _head; _head = &node; }
 	constexpr void PushBack(T& node) noexcept { *Tail() = &node; node._next = {}; }
 
-	constexpr void Prepend(ForwardList& list) noexcept { list.Append(*this); swap(*this, list); }
-	constexpr void Append(ForwardList& list) noexcept { *Tail() = std::exchange(list._head, {}); }
+	constexpr void Prepend(ForwardList&& list) noexcept { list.Append(*this); *this = std::move(list); }
+	constexpr void Append(ForwardList&& list) noexcept { *Tail() = std::exchange(list._head, {}); }
 
 //	constexpr void Splice(const_iterator pos, ForwardList& other) noexcept {
 //
@@ -149,10 +148,9 @@ private:
 	NodeType* _head{};
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-// ForwardList::iterator
-//---------------------------------------------------------------------------------------------------------------------
-
+///
+/// ForwardList::iterator
+///
 template <typename T, typename Tag>
 template <typename U>
 class ForwardList<T, Tag>::iterator_impl {
@@ -167,14 +165,23 @@ public:
 
 	constexpr operator iterator_impl<const U>() const noexcept { return iterator_impl<const U>{_current}; }
 
-	constexpr reference operator*() const noexcept { return static_cast<reference>(**_current); }
-	constexpr pointer operator->() const noexcept { return static_cast<pointer>(*_current); }
+	constexpr reference operator*() const noexcept { assert(_current); return static_cast<reference>(**_current); }
+	constexpr pointer operator->() const noexcept { assert(_current); return static_cast<pointer>(*_current); }
 
-	constexpr iterator_impl& operator++() noexcept { _current = &(*_current)->_next; return *this; }
+	constexpr iterator_impl& operator++() noexcept {
+		assert(_current);
+		_current = &(*_current)->_next;
+		if (!*_current) {
+			_current = {};
+		}
+		return *this;
+	}
 	constexpr iterator_impl operator++(int) noexcept { auto ret = *this; ++*this; return ret; }
 
-	constexpr bool operator==(iterator_impl rhs) const noexcept { return _current == rhs._current || (Terminal() && rhs.Terminal()); }
-	constexpr bool operator!=(iterator_impl rhs) const noexcept { return !operator==(std::move(rhs)); }
+	constexpr bool operator==(iterator_impl rhs) const noexcept { return _current == rhs._current; }
+	constexpr bool operator!=(iterator_impl rhs) const noexcept { return _current != rhs._current; }
+	
+	constexpr bool Last() const noexcept { return _current && !_current->_next; }
 
 private:
 	friend class ForwardList<T, Tag>;
@@ -182,22 +189,20 @@ private:
 	constexpr explicit iterator_impl(NodeType** current) noexcept : _current{current} {}
 
 	constexpr iterator_impl& EraseAndMoveForward() noexcept {
-		if (_current) {
-			*_current = std::exchange((*_current)->_next, {});
+		assert(_current);
+		if (!(*_current = (*_current)->_next)) {
+			_current = {};
 		}
 		return *this;
 	}
-	
-	constexpr bool Terminal() const noexcept { return !_current || !*_current; }
 
 private:
 	NodeType** _current{};
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-// CircularForwardList
-//---------------------------------------------------------------------------------------------------------------------
-
+///
+/// CircularForwardList
+///
 template <typename T, typename Tag = void>
 class CircularForwardList {
 private:
@@ -224,7 +229,8 @@ public:
 	
 	constexpr CircularForwardList(CircularForwardList&& rhs) noexcept
 		: _last{std::exchange(rhs._last, {})}
-	{}
+	{
+	}
 	
 	constexpr CircularForwardList& operator=(CircularForwardList&& rhs) noexcept {
 		if (&rhs != this) {
@@ -232,14 +238,10 @@ public:
 		}
 		return *this;
 	}
-
-	constexpr iterator before_begin() noexcept { return iterator{&_last}; }
-	constexpr const_iterator before_begin() const noexcept { return const_iterator{&_last}; }
-	constexpr const_iterator cbefore_begin() const noexcept { return const_iterator{&_last}; }
-
-	constexpr iterator begin() noexcept { return iterator{HeadOrNull()}; }
-	constexpr const_iterator begin() const noexcept { return const_iterator{HeadOrNull()}; }
-	constexpr const_iterator cbegin() const noexcept { return const_iterator{HeadOrNull()}; }
+	
+	constexpr iterator begin() noexcept { return iterator{_last ? &_last : nullptr}; }
+	constexpr const_iterator begin() const noexcept { return const_iterator{_last ? &_last : nullptr}; }
+	constexpr const_iterator cbegin() const noexcept { return const_iterator{_last ? &_last : nullptr}; }
 
 	constexpr iterator end() noexcept { return iterator{}; }
 	constexpr const_iterator end() const noexcept { return const_iterator{}; }
@@ -248,25 +250,25 @@ public:
 	constexpr bool Empty() const noexcept { return !_last; }
 	constexpr void Clear() noexcept { _last = {}; }
 
-	constexpr T& Front() noexcept { return static_cast<T&>(*_last->_next); }
-	constexpr const T& Front() const noexcept { return static_cast<const T&>(*_last->_next); }
+	constexpr T& Front() noexcept { assert(_last); return static_cast<T&>(*_last->_next); }
+	constexpr const T& Front() const noexcept { assert(_last); return static_cast<const T&>(*_last->_next); }
 
-	constexpr T& Back() noexcept { return static_cast<T&>(*_last); }
-	constexpr const T& Back() const noexcept { return static_cast<const T&>(*_last); }
+	constexpr T& Back() noexcept { assert(_last); return static_cast<T&>(*_last); }
+	constexpr const T& Back() const noexcept { assert(_last); return static_cast<const T&>(*_last); }
 
-	constexpr void PushFront(T& node) noexcept { InsertAfter(before_begin(), node); }
-	constexpr void PushBack(T& node) noexcept { InsertAfter(before_begin(), node); _last = &node; }
-
-	constexpr iterator InsertAfter(iterator pos, T& node) noexcept {
-		if (auto after = pos.operator->()) {
+	constexpr void PushFront(T& node) noexcept { InsertBefore(begin(), node); }
+	constexpr void PushBack(T& node) noexcept { InsertBefore(begin(), node); _last = &node; }
+	
+	constexpr iterator InsertBefore(iterator pos, T& node) noexcept {
+		if (auto after = pos._currentLast ? *pos._currentLast : nullptr) {
 			node._next = after->_next;
 			after->_next = &node;
 			return iterator{&after->_next};
 		}
 		else {
-			_last = &node;
 			node._next = &node;
-			return before_begin();
+			_last = &node;
+			return begin();
 		}
 	}
 
@@ -298,7 +300,8 @@ public:
 
 			do {
 				auto next = current->_next;
-				current->_next = std::exchange(prev, current);
+				current->_next = prev;
+				prev = current;
 				current = next;
 			}
 			while (current != head);
@@ -312,18 +315,12 @@ public:
 	constexpr friend void swap(CircularForwardList<T, Tag>& lhs, CircularForwardList<T, Tag>& rhs) noexcept { lhs.Swap(rhs); }
 
 private:
-	constexpr NodeType** HeadOrNull() noexcept {
-		return _last ? &_last->_next : nullptr;
-	}
-
-private:
 	NodeType* _last{};
 };
 
-//---------------------------------------------------------------------------------------------------------------------
-// CircularForwardList::iterator
-//---------------------------------------------------------------------------------------------------------------------
-
+///
+/// CircularForwardList::iterator
+///
 template <typename T, typename Tag>
 template <typename U>
 class CircularForwardList<T, Tag>::iterator_impl {
@@ -336,54 +333,57 @@ public:
 
 	constexpr explicit iterator_impl() = default;
 
-	constexpr operator iterator_impl<const U>() const noexcept { return iterator_impl<const U>{_current, _head}; }
+	constexpr operator iterator_impl<const U>() const noexcept { return iterator_impl<const U>{_currentLast, _initialLast}; }
 
-	constexpr reference operator*() const noexcept { return static_cast<reference>(**_current); }
-	constexpr pointer operator->() const noexcept { return static_cast<pointer>(*_current); }
+	constexpr reference operator*() const noexcept { assert(_currentLast); return static_cast<reference>(*(*_currentLast)->_next); }
+	constexpr pointer operator->() const noexcept { assert(_currentLast); return static_cast<pointer>((*_currentLast)->_next); }
 
 	constexpr iterator_impl& operator++() noexcept {
-		if (_current) {
-			_current = &(*_current)->_next;
-			if (*_current == *_head) {
-				_current = {};
-			}
+		assert(_currentLast);
+		
+		_currentLast = &(*_currentLast)->_next;
+		if (*_currentLast == *_initialLast) {
+			// This is the end
+			_currentLast = {};
 		}
 		return *this;
 	}
 
 	constexpr iterator_impl operator++(int) noexcept { auto ret = *this; ++*this; return ret; }
 
-	constexpr bool operator==(iterator_impl rhs) const noexcept { return _current == rhs._current || (Terminal() && rhs.Terminal()); }
-	constexpr bool operator!=(iterator_impl rhs) const noexcept { return !operator==(std::move(rhs)); }
+	constexpr bool operator==(iterator_impl rhs) const noexcept { return _currentLast == rhs._currentLast; }
+	constexpr bool operator!=(iterator_impl rhs) const noexcept { return _currentLast != rhs._currentLast; }
+	
+	constexpr bool Last() const noexcept { return _currentLast && (*_currentLast)->_next == *_initialLast; }
 
 private:
 	friend class CircularForwardList<T, Tag>;
 
-	constexpr explicit iterator_impl(NodeType** current) noexcept : _current{current}, _head{current} {}
-	constexpr explicit iterator_impl(NodeType** current, NodeType** head) noexcept : _current{current}, _head{head} {}
+	constexpr explicit iterator_impl(NodeType** last) noexcept : _currentLast{last}, _initialLast{last} {}
+	constexpr explicit iterator_impl(NodeType** last, NodeType** initialLast) noexcept : _currentLast{last}, _initialLast{initialLast} {}
 
 	constexpr iterator_impl& EraseAndMoveForward() noexcept {
-		if (_current) {
-			if (*_current == (*_current)->_next) {
-				*_current = {};
-				_current = {};
-			}
-			else {
-				*_current = (*_current)->_next;
-				if (_current != _head && *_current == *_head) {
-					*_current = {};
-					_current = {};
-				}
+		assert(_currentLast);
+		if (*_currentLast == (*_currentLast)->_next) {
+			// If single element, it's the _last one, so just clear it
+			*_currentLast = {};
+			_currentLast = {};
+		}
+		else {
+			// Overwrite current with next one
+			(*_currentLast)->_next = (*_currentLast)->_next->_next;
+			if (_currentLast != _initialLast && (*_currentLast)->_next == (*_initialLast)->_next) {
+				// If removed the tail, modify _last
+				*_initialLast = *_currentLast;
+				_currentLast = {};
 			}
 		}
 		return *this;
 	}
-	
-	constexpr bool Terminal() const noexcept { return !_current || !*_current; }
 
 private:
-	NodeType** _current{};
-	NodeType** _head{};
+	NodeType** _currentLast{};
+	NodeType** _initialLast{};
 };
 
 //---------------------------------------------------------------------------------------------------------------------
