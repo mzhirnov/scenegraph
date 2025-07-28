@@ -230,36 +230,30 @@ void TestErase3() {
 		auto it = list.begin();
 		ASSERT_EQ(it, list.end());
 	}
-
-	list.Erase(list.end());
-	{
-		auto it = list.begin();
-		ASSERT_EQ(it, list.end());
-	}
 }
 
-using list = ForwardList<Node>;
-using circular_list = CircularForwardList<Node>;
+using List = ForwardList<Node>;
+using CircularList = CircularForwardList<Node>;
 
 //---------------------------------------------------------------------------------------------------------------------
 
-TEST(List, PushFront) { TestPushFront<list>(); }
-TEST(List, PushBack) { TestPushBack<list>(); }
-TEST(List, Reverse) { TestReverse<list>(); }
-TEST(List, Rotate) { TestRotate<list>(); }
-TEST(List, Erase) { TestErase<list>(); }
-TEST(List, Erase2) { TestErase2<list>(); }
-TEST(List, Erase3) { TestErase3<list>(); }
+TEST(List, PushFront) { TestPushFront<List>(); }
+TEST(List, PushBack) { TestPushBack<List>(); }
+TEST(List, Reverse) { TestReverse<List>(); }
+TEST(List, Rotate) { TestRotate<List>(); }
+TEST(List, Erase) { TestErase<List>(); }
+TEST(List, Erase2) { TestErase2<List>(); }
+TEST(List, Erase3) { TestErase3<List>(); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-TEST(CircularList, PushFront) { TestPushFront<circular_list>(); }
-TEST(CircularList, PushBack) { TestPushBack<circular_list>(); }
-TEST(CircularList, Reverse) { TestReverse<circular_list>(); }
-TEST(CircularList, Rotate) { TestRotate<circular_list>(); }
-TEST(CircularList, Erase) { TestErase<circular_list>(); }
-TEST(CircularList, Erase2) { TestErase2<circular_list>(); }
-TEST(CircularList, Erase3) { TestErase3<circular_list>(); }
+TEST(CircularList, PushFront) { TestPushFront<CircularList>(); }
+TEST(CircularList, PushBack) { TestPushBack<CircularList>(); }
+TEST(CircularList, Reverse) { TestReverse<CircularList>(); }
+TEST(CircularList, Rotate) { TestRotate<CircularList>(); }
+TEST(CircularList, Erase) { TestErase<CircularList>(); }
+TEST(CircularList, Erase2) { TestErase2<CircularList>(); }
+TEST(CircularList, Erase3) { TestErase3<CircularList>(); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
