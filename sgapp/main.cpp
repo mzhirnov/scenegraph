@@ -110,8 +110,8 @@ AutoObject::~AutoObject() { puts("~AutoObject()"); }
 
 int AutoObject::Value() const { return _impl->i; }
 
-static SDL_GPUDevice* device;
 static SDL_Window* window;
+static SDL_GPUDevice* device;
 static SDL_GPUGraphicsPipeline* pipeline;
 static SDL_GPUBuffer* vertexBuffer;
 static SDL_GPUTransferBuffer* transferBuffer;
@@ -247,15 +247,15 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	
 	SDL_Init(SDL_INIT_VIDEO);
 	
-	device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL, true, nullptr);
-	if (!device) {
-		SDL_Log("GPUCreateDevice failed");
-		return SDL_APP_FAILURE;
-	}
-	
 	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE);
 	if (!window) {
 		SDL_Log("CreateWindow failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
+	
+	device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL | SDL_GPU_SHADERFORMAT_METALLIB, true, nullptr);
+	if (!device) {
+		SDL_Log("GPUCreateDevice failed");
 		return SDL_APP_FAILURE;
 	}
 	
@@ -427,8 +427,8 @@ void SDL_AppQuit(void* /*appstate*/, SDL_AppResult /*result*/) {
 	SDL_ReleaseGPUBuffer(device, vertexBuffer);
 	SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
 	SDL_ReleaseWindowFromGPUDevice(device, window);
-	SDL_DestroyWindow(window);
 	SDL_DestroyGPUDevice(device);
+	SDL_DestroyWindow(window);
 }
 
 } // extern "C"
