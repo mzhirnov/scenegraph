@@ -5,10 +5,11 @@
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/utils/BitUtils.h>
+#include <scenegraph/geometry/Matrix4.h>
 
 #include "Shader.h"
 
-#include "shaders/PositionColor.vert.h"
+#include "shaders/PositionColorTransform.vert.h"
 #include "shaders/SolidColor.frag.h"
 
 #include <iostream>
@@ -247,7 +248,7 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	
 	SDL_Init(SDL_INIT_VIDEO);
 	
-	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE);
+	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE /*| SDL_WINDOW_HIGH_PIXEL_DENSITY*/);
 	if (!window) {
 		SDL_Log("CreateWindow failed: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
@@ -265,13 +266,13 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	}
 	
 	// Create the shaders
-	SDL_GPUShader* vertexShader = LoadShader(device, PositionColor_vert_msl, PositionColor_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX);
+	SDL_GPUShader* vertexShader = LoadShader(device, PositionColorTransform_vert_msl, PositionColorTransform_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 0);
 	if (!vertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
 	}
 
-	SDL_GPUShader* fragmentShader = LoadShader(device, SolidColor_frag_msl, SolidColor_frag_msl_len, SDL_GPU_SHADERSTAGE_FRAGMENT);
+	SDL_GPUShader* fragmentShader = LoadShader(device, SolidColor_frag_msl, SolidColor_frag_msl_len, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
@@ -367,22 +368,30 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
     }
 	
     SDL_GPUTexture* swapchainTexture;
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture, nullptr, nullptr)) {
+    Uint32 width, height;
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture, &width, &height)) {
         SDL_Log("WaitAndAcquireGPUSwapchainTexture failed: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 	
 	if (swapchainTexture) {
+		Matrix4 viewProjectionMatrix = Matrix4MakeOrthographicOffCenter(0, width, height, 0, 0.0f, 1.0f);
+		
+		float l = 0.5f;
+		float r = width - 1 + 0.5f;
+		float t = 0.5f;
+		float b = height - 1 + 0.5f;
+		
 		// Write geometry to the transfer data
 		auto vertices = static_cast<PositionColorVertex*>(SDL_MapGPUTransferBuffer(device, transferBuffer, true));
-		*vertices++ = { -0.5f,  0.5f, 0, 255,   0, 255, 255 };
-		*vertices++ = { -0.5f, -0.5f, 0, 255,   0, 255, 255 };
-		*vertices++ = { -0.5f,  0.5f, 0, 255,   0,   0, 255 };
-		*vertices++ = {  0.5f,  0.5f, 0, 255,   0,   0, 255 };
-		*vertices++ = {  0.5f,  0.5f, 0, 255, 255,   0, 255 };
-		*vertices++ = {  0.5f, -0.5f, 0, 255, 255,   0, 255 };
-		*vertices++ = {  0.5f, -0.5f, 0,   0, 255, 255, 255 };
-		*vertices++ = { -0.5f, -0.5f, 0,   0, 255, 255, 255 };
+		*vertices++ = { l, b, 0, 255, 255, 255, 255 };
+		*vertices++ = { l, t, 0, 255, 255, 255, 255 };
+		*vertices++ = { l, t, 0,   0, 255,   0, 255 };
+		*vertices++ = { r, t, 0,   0, 255,   0, 255 };
+		*vertices++ = { r, t, 0,   0,   0, 255, 255 };
+		*vertices++ = { r, b, 0,   0,   0, 255, 255 };
+		*vertices++ = { r, b, 0, 255,   0,   0, 255 };
+		*vertices++ = { l, b, 0, 255,   0,   0, 255 };
 		SDL_UnmapGPUTransferBuffer(device, transferBuffer);
 		
 		// Upload the transfer data to the vertex buffer
@@ -413,6 +422,7 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 			.offset = 0
 		}};
 		SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, SDL_arraysize(bufferBindings));
+		SDL_PushGPUVertexUniformData(cmdbuf, 0, &viewProjectionMatrix, sizeof(Matrix4));
 		SDL_DrawGPUPrimitives(renderPass, 8, 1, 0, 0);
 		SDL_EndGPURenderPass(renderPass);
 	}

@@ -9,8 +9,8 @@ SDL_GPUShader* LoadShader(
 	const unsigned char* code,
 	std::size_t codeSize,
 	SDL_GPUShaderStage stage,
-	Uint32 samplerCount = 0,
-	Uint32 uniformBufferCount = 0,
-	Uint32 storageBufferCount = 0,
-	Uint32 storageTextureCount = 0
+	Uint32 samplerCount,
+	Uint32 uniformBufferCount,
+	Uint32 storageBufferCount,
+	Uint32 storageTextureCount
 );
