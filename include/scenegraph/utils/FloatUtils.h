@@ -2,10 +2,7 @@
 
 #include <scenegraph/utils/BitUtils.h>
 
-constexpr bool AlmostEqualFloats(float a, float b, int ulps) {
-	// Make sure ulps is small enough that the default NaN won't compare as equal to anything.
-	assert(ulps > 0 && ulps < 4 * 1024 * 1024);
-	
+constexpr int FloatsDifferenceULPs(float a, float b) {
 	// Make aInt lexicographically ordered as a two's-complement int
 	int aInt = BitCast<int>(a);
 	if (aInt < 0) {
@@ -18,7 +15,13 @@ constexpr bool AlmostEqualFloats(float a, float b, int ulps) {
 		bInt = int(0x80000000) - bInt;
 	}
 	
-	return std::abs(aInt - bInt) <= ulps;
+	return std::abs(aInt - bInt);
+}
+
+constexpr bool AlmostEqualFloats(float a, float b, int ulps) {
+	// Make sure ulps is small enough that the default NaN won't compare as equal to anything.
+	assert(ulps > 0 && ulps < 4 * 1024 * 1024);
+	return FloatsDifferenceULPs(a, b) <= ulps;
 }
 
 inline float DifferenceOfProducts(float a, float b, float c, float d) {
