@@ -77,12 +77,20 @@ Matrix4 Matrix4MakePerspective(float width, float height, float nearZ, float far
 Matrix4 Matrix4MakePerspectiveOffCenter(float left, float right, float bottom, float top, float nearZ, float farZ);
 Matrix4 Matrix4MakePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearZ, float farZ);
 
+inline Matrix4 Matrix4Transpose(const Matrix4& m) {
+	return Matrix4 {
+		m.m11, m.m21, m.m31, m.m41,
+		m.m12, m.m22, m.m32, m.m42,
+		m.m13, m.m23, m.m33, m.m43,
+		m.m14, m.m24, m.m34, m.m44
+	};
+}
+
 Matrix4 Matrix4Scale(const Matrix4& m, float s);
 Matrix4 Matrix4Add(const Matrix4& m1, const Matrix4& m2);
 Matrix4 Matrix4Subtract(const Matrix4& m1, const Matrix4& m2);
 Matrix4 Matrix4Multiply(const Matrix4& m1, const Matrix4& m2);
 Matrix4 Matrix4Invert(const Matrix4& m, bool* invertible);
-Matrix4 Matrix4InvertAndTranspose(const Matrix4& m, bool* invertible);
 
 inline Matrix4 operator+(const Matrix4& m1, const Matrix4& m2) { return Matrix4Add(m1, m2); }
 inline Matrix4 operator-(const Matrix4& m1, const Matrix4& m2) { return Matrix4Subtract(m1, m2); }

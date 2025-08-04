@@ -1,7 +1,24 @@
 #pragma once
 
 #include <array>
+#include <type_traits>
+
 #include <cstddef>
+#include <cmath>
+
+template<typename To, typename From>
+constexpr
+std::enable_if_t<
+	sizeof(To) == sizeof(From) &&
+	std::is_trivially_copyable_v<From> &&
+	std::is_trivially_copyable_v<To>,
+	To>
+BitCast(const From& src) noexcept {
+	static_assert(std::is_trivially_constructible_v<To>);
+	To dst;
+	std::memcpy(&dst, &src, sizeof(To));
+	return dst;
+}
 
 constexpr uint32_t PopCount(uint32_t x) {
 	auto a = x - ((x >> 1) & 0x55555555);
