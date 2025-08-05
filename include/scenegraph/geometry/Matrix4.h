@@ -1,5 +1,7 @@
 #pragma once
 
+struct Quaternion;
+
 struct Matrix4 {
 	float m11, m12, m13, m14;
 	float m21, m22, m23, m24;
@@ -70,6 +72,11 @@ inline Matrix4 Matrix4MakeTranslation(float tx, float ty, float tz) {
 		tx, ty, tz, 1
 	};
 }
+
+Matrix4 Matrix4MakeWithQuaternion(const Quaternion& q);
+Matrix4 Matrix4MakeXRotation(float rad);
+Matrix4 Matrix4MakeYRotation(float rad);
+Matrix4 Matrix4MakeZRotation(float rad);
 
 Matrix4 Matrix4MakeOrthographic(float width, float height, float nearZ, float farZ);
 Matrix4 Matrix4MakeOrthographicOffCenter(float left, float right, float bottom, float top, float nearZ, float farZ);

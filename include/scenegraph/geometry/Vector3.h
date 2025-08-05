@@ -5,6 +5,7 @@
 #include <cmath>
 
 struct Matrix4;
+struct Quaternion;
 
 struct Vector3 {
 	float x, y, z;
@@ -52,9 +53,10 @@ inline Vector3 Vector3Cross(Vector3 v1, Vector3 v2) {
 
 inline float Vector3Dot(Vector3 v1, Vector3 v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
 
-Vector3 Vector3TransformCoord(Vector3 v, const Matrix4& m);
+Vector3 Vector3Rotate(Vector3 v, const Quaternion& q);
+Vector3 Vector3Rotate(Vector3 v, const Matrix4& m);
+Vector3 Vector3Transform(Vector3 v, const Matrix4& m);
 Vector3 Vector3TransformAndProjectCoord(Vector3 v, const Matrix4& m);
-Vector3 Vector3TransformNormal(Vector3 v, const Matrix4& m);
 
 inline Vector3 operator+(Vector3 v1, Vector3 v2) { return Vector3Add(v1, v2); }
 inline Vector3 operator-(Vector3 v1, Vector3 v2) { return Vector3Subtract(v1, v2); }

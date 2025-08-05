@@ -1,5 +1,51 @@
 #include <scenegraph/geometry/Matrix4.h>
+#include <scenegraph/geometry/Quaternion.h>
 #include <scenegraph/utils/FloatUtils.h>
+
+Matrix4 Matrix4MakeWithQuaternion(const Quaternion& q) {
+	return Matrix4 {
+		1 - 2 * DifferenceOfProducts(q.y, q.y, q.z, q.z), 2 * DifferenceOfProducts(q.x, q.y, -q.w, q.z), 2 * DifferenceOfProducts(q.x, q.z, q.w, q.y), 0,
+		2 * DifferenceOfProducts(q.x, q.y, q.w, q.z), 1 - 2 * DifferenceOfProducts(q.x, q.x, q.z, q.z), 2 * DifferenceOfProducts(q.y, q.z, -q.w, q.x), 0,
+		2 * DifferenceOfProducts(q.x, q.z, -q.w, q.y), 2 * DifferenceOfProducts(q.y, q.z, q.w, q.x), 1 - 2 * DifferenceOfProducts(q.x, q.x, q.y, q.y), 0,
+		0, 0, 0, 1
+	};
+}
+
+Matrix4 Matrix4MakeXRotation(float rad) {
+	float s = std::sinf(rad);
+	float c = std::cosf(rad);
+	
+	return Matrix4 {
+		1,  0, 0, 0,
+		0,  c, s, 0,
+		0, -s, c, 0,
+		0,  0, 0, 1
+	};
+}
+
+Matrix4 Matrix4MakeYRotation(float rad) {
+	float s = std::sinf(rad);
+	float c = std::cosf(rad);
+	
+	return Matrix4 {
+		 c, 0, s, 0,
+		 0, 1, 0, 0,
+		-s, 0, c, 0,
+		 0, 0, 0, 1
+	};
+}
+
+Matrix4 Matrix4MakeZRotation(float rad) {
+	float s = std::sinf(rad);
+	float c = std::cosf(rad);
+	
+	return Matrix4 {
+		 c, s, 0, 0,
+		-s, c, 0, 0,
+		 0, 0, 1, 0,
+		 0, 0, 0, 1
+	};
+}
 
 Matrix4 Matrix4MakeOrthographic(float width, float height, float nearZ, float farZ) {
 	return Matrix4 {
