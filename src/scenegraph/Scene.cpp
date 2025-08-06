@@ -18,15 +18,18 @@ std::unique_ptr<SceneString> Scene::NewString(std::string_view str) noexcept {
 }
 
 SceneObject Scene::GetRootObject() noexcept {
-	return SceneObject{_root.GetPtr()};
+	if (!_root) {
+		_root = NewEntity<SceneNode>(Passkey{});
+	}
+	return SceneObject{_root.get()};
 }
 
 SceneObject Scene::AddObject() noexcept {
-	return SceneObject{_root->AppendChildNode(NewEntity<SceneNode>(Passkey{}))};
+	return GetRootObject().AppendChild();
 }
 
 bool Scene::ForEachObject(EnumObjectsCallback callback, void* context) noexcept {
-	if (!callback) {
+	if (!_root || !callback) {
 		return false;
 	}
 	

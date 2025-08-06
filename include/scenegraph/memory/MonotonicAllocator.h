@@ -123,8 +123,8 @@ public:
 			
 #if DEBUG_ALLOCATORS_ENABLED
 			std::cout << "- WM " << watermarkStart << " -> " << (this->_stackIndex ? *sp : 0) << '\n';
-			assert(sp != stackTop || this->_stackIndex == 0);
 #endif
+			assert(sp != stackTop || this->_stackIndex == 0);
 		}
 	}
 	

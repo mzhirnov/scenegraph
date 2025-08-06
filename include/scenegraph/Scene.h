@@ -55,9 +55,7 @@ private:
 	bool ForEachObject(EnumObjectsCallback callback, void* context) noexcept;
 	
 private:
-	// In order not to prevent disposing of first allocator's page by persistent root node,
-	// don't use NewEntity and std::unique_ptr here.
-	StaticImpl<SceneNode, 5 * sizeof(void*)> _root;
+	std::unique_ptr<SceneNode> _root;
 };
 
 #include "Scene.inl"
