@@ -266,13 +266,13 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	}
 	
 	// Create the shaders
-	SDL_GPUShader* vertexShader = LoadShader(device, PositionColorTransform_vert_msl, PositionColorTransform_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 0);
+	SDL_GPUShader* vertexShader = LoadShader(device, PositionColorTransform_vert_air, PositionColorTransform_vert_air_len, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 0);
 	if (!vertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
 	}
 
-	SDL_GPUShader* fragmentShader = LoadShader(device, SolidColor_frag_msl, SolidColor_frag_msl_len, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);
+	SDL_GPUShader* fragmentShader = LoadShader(device, SolidColor_frag_air, SolidColor_frag_air_len, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
@@ -303,12 +303,12 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		.buffer_slot = 0,
 		.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
 		.location = 0,
-		.offset = 0
+		.offset = offsetof(PositionColorVertex, x)
 	}, {
 		.buffer_slot = 0,
 		.format = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM,
 		.location = 1,
-		.offset = sizeof(float) * 3
+		.offset = offsetof(PositionColorVertex, r)
 	}};
 	
 	SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo = {

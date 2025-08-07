@@ -14,7 +14,7 @@ SDL_GPUShader* LoadShader(
 		.code = code,
 		.code_size = codeSize,
 		.entrypoint = "main0",
-		.format = SDL_GPU_SHADERFORMAT_MSL,
+		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = stage,
 		.num_samplers = samplerCount,
 		.num_uniform_buffers = uniformBufferCount,
