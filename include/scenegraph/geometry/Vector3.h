@@ -52,6 +52,7 @@ inline Vector3 Vector3Cross(Vector3 v1, Vector3 v2) {
 }
 
 inline float Vector3Dot(Vector3 v1, Vector3 v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+inline float Vector3Distance(Vector3 v1, Vector3 v2) { return Vector3Length(Vector3Subtract(v1, v2)); }
 
 Vector3 Vector3Rotate(Vector3 v, const Quaternion& q);
 Vector3 Vector3Rotate(Vector3 v, const Matrix4& m);
