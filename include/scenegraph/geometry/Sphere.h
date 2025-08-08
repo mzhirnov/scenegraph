@@ -14,5 +14,5 @@ inline Sphere SphereMake(Vector3 origin, float radius) {
 	return out;
 }
 
-inline bool SphereDistance(const Sphere& s1, const Sphere& s2) { return Vector3Distance(s1.origin, s2.origin) - (s1.radius + s2.radius); }
-inline bool SphereIntersect(const Sphere& s1, const Sphere& s2) { return SphereDistance(s1.origin, s2.origin) < 0; }
+inline float SphereDistance(const Sphere& s1, const Sphere& s2) { return Vector3Distance(s1.origin, s2.origin) - (s1.radius + s2.radius); }
+inline bool SphereIntersect(const Sphere& s1, const Sphere& s2) { return SphereDistance(s1, s2) < 0; }
