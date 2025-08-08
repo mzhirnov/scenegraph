@@ -4,8 +4,6 @@ project(sgapp LANGUAGES CXX)
 
 add_executable(${PROJECT_NAME}
   main.cpp
-  Shader.h
-  Shader.cpp
 )
 
 include(FetchContent)

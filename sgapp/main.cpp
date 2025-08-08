@@ -7,7 +7,6 @@
 #include <scenegraph/utils/BitUtils.h>
 #include <scenegraph/geometry/Matrix4.h>
 
-#include "Shader.h"
 
 #include "shaders/PositionColorTransform.vert.h"
 #include "shaders/SolidColor.frag.h"
@@ -266,13 +265,26 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	}
 	
 	// Create the shaders
-	SDL_GPUShader* vertexShader = LoadShader(device, PositionColorTransform_vert_air, PositionColorTransform_vert_air_len, SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 0);
+	SDL_GPUShaderCreateInfo vertexShaderCreateInfo = {
+		.code = PositionColorTransform_vert_air,
+		.code_size = PositionColorTransform_vert_air_len,
+		.format = SDL_GPU_SHADERFORMAT_METALLIB,
+		.stage = SDL_GPU_SHADERSTAGE_VERTEX,
+		.num_uniform_buffers = 1
+	};
+	SDL_GPUShader* vertexShader = SDL_CreateGPUShader(device, &vertexShaderCreateInfo);
 	if (!vertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
 	}
 
-	SDL_GPUShader* fragmentShader = LoadShader(device, SolidColor_frag_air, SolidColor_frag_air_len, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);
+	SDL_GPUShaderCreateInfo fragmentShaderCreateInfo = {
+		.code = SolidColor_frag_air,
+		.code_size = SolidColor_frag_air_len,
+		.format = SDL_GPU_SHADERFORMAT_METALLIB,
+		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT
+	};
+	SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(device, &fragmentShaderCreateInfo);
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
