@@ -126,10 +126,10 @@ struct PositionColorVertex {
 };
 
 struct SpriteInstance {
-	float x, y, w, h;
-	float pivotX, pivotY;
+	float x, y, z;
 	float rad;
-	float padding;
+	float w, h;
+	float pivotX, pivotY;
 	float texU, texV, texW, texH;
 	float r, g, b, a;
 };
@@ -508,6 +508,7 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 			for (int i = 0; i < kNumSprites; i++) {
 				dataPtr[i].x = 100 + i * 50;
 				dataPtr[i].y = 100;
+				dataPtr[i].z = 0;
 				dataPtr[i].w = 32;
 				dataPtr[i].h = 32;
 				dataPtr[i].pivotX = 16;
