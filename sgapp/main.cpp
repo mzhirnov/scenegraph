@@ -126,12 +126,11 @@ struct PositionColorVertex {
 };
 
 struct SpriteInstance {
-	float x, y, z;
-	float rad;
-	float w, h;
+	float x, y, w, h;
 	float pivotX, pivotY;
+	float rad;
+	uint8_t r, g, b, a;
 	float texU, texV, texW, texH;
-	float r, g, b, a;
 };
 
 extern "C" {
@@ -503,22 +502,32 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 		}
 		
 		{
-			constexpr int kNumSprites = 20;
+			constexpr int kNumSprites = 21;
 			SpriteInstance* dataPtr = static_cast<SpriteInstance*>(SDL_MapGPUTransferBuffer(device, spriteDataTransferBuffer, true));
-			for (int i = 0; i < kNumSprites; i++) {
+			for (int i = 0; i < kNumSprites - 1; i++) {
 				dataPtr[i].x = 100 + i * 50;
 				dataPtr[i].y = 100;
-				dataPtr[i].z = 0;
 				dataPtr[i].w = 32;
 				dataPtr[i].h = 32;
-				dataPtr[i].pivotX = 16;
-				dataPtr[i].pivotY = 16;
+				dataPtr[i].pivotX = 0.5f;
+				dataPtr[i].pivotY = 0.5f;
 				dataPtr[i].rad = SDL_PI_F / (kNumSprites - 1) * i;
-				dataPtr[i].r = 1.0f - 0.05f * i;
-				dataPtr[i].g = 1.0f - 0.03f * i;
-				dataPtr[i].b = 1.0f;
-				dataPtr[i].a = 1.0f;
+				dataPtr[i].r = static_cast<uint8_t>(255 - 10 * i);
+				dataPtr[i].g = static_cast<uint8_t>(255 - 5 * i);
+				dataPtr[i].b = 255;
+				dataPtr[i].a = 255;
 			}
+			dataPtr[20].x = 100;
+			dataPtr[20].y = 100;
+			dataPtr[20].w = 32;
+			dataPtr[20].h = 32;
+			dataPtr[20].pivotX = 0.0f;
+			dataPtr[20].pivotY = 0.0f;
+			dataPtr[20].rad = SDL_PI_F / 8;
+			dataPtr[20].r = 255;
+			dataPtr[20].g = 0;
+			dataPtr[20].b = 0;
+			dataPtr[20].a = 255;
 			SDL_UnmapGPUTransferBuffer(device, spriteDataTransferBuffer);
 			
 			// Upload instance data
