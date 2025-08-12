@@ -1,15 +1,6 @@
 #pragma once
 
-struct Matrix32Components {
-	float sx, sy;
-	float shear;
-	float rad;
-	float tx, ty;
-};
-
-inline Matrix32Components Matrix32ComponentsMakeZero() {
-	return Matrix32Components{0, 0, 0, 0, 0, 0};
-}
+#include <scenegraph/geometry/Transform2D.h>
 
 struct Matrix32 {
 	float a, b;
@@ -49,18 +40,18 @@ inline Matrix32 Matrix32MakeScale(float sx, float sy) {
 	};
 }
 
-inline Matrix32 Matrix32MakeShear(float m) {
+inline Matrix32 Matrix32MakeXShear(float shear) {
 	return Matrix32 {
-		1, 0,
-		m, 1,
+		1, -shear,
+		0, 1,
 		0, 0
 	};
 }
 
-inline Matrix32 Matrix32MakeScaleAndShear(float sx, float sy, float m) {
+inline Matrix32 Matrix32MakeYShear(float shear) {
 	return Matrix32 {
-		sx, 0,
-		sy * m, sy,
+		1, 0,
+		-shear, 1,
 		0, 0
 	};
 }
@@ -75,8 +66,8 @@ inline Matrix32 Matrix32MakeTranslation(float tx, float ty) {
 
 Matrix32 Matrix32MakeRotation(float rad);
 
-Matrix32 Matrix32MakeWithComponents(const Matrix32Components& c);
-Matrix32Components Matrix32DecomposeToComponents(const Matrix32& m, bool* invertible);
+Matrix32 Matrix32MakeWithTransform2D(const Transform2D& c);
+bool Matrix32DecomposeToTransform2D(const Matrix32& m, Transform2D* transform);
 
 Matrix32 Matrix32Scale(const Matrix32& m, float s);
 Matrix32 Matrix32Add(const Matrix32& m1, const Matrix32& m2);

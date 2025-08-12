@@ -12,11 +12,17 @@ Matrix32 Matrix32MakeRotation(float rad) {
 	};
 }
 
-Matrix32 Matrix32MakeWithComponents(const Matrix32Components& c) {
-	if (c.shear > std::numeric_limits<float>::epsilon()) {
-		auto m = Matrix32MultiplyRotation(
-			Matrix32MakeScaleAndShear(c.sx, c.sy, c.shear),
-			Matrix32MakeRotation(c.rad));
+Matrix32 Matrix32MakeWithTransform2D(const Transform2D& c) {
+	constexpr auto epsilon = std::numeric_limits<float>::epsilon();
+	if (c.shearX > epsilon || c.shearY > epsilon) {
+		auto m =
+			Matrix32MultiplyRotation(
+				Matrix32MultiplyRotation(
+					Matrix32MakeScale(c.sx, c.sy),
+					Matrix32MultiplyRotation(
+						Matrix32MakeXShear(c.shearX),
+						Matrix32MakeYShear(c.shearY))),
+				Matrix32MakeRotation(c.rad));
 		m.tx = c.tx;
 		m.ty = c.ty;
 		return m;
@@ -33,22 +39,22 @@ Matrix32 Matrix32MakeWithComponents(const Matrix32Components& c) {
 	}
 }
 
-Matrix32Components Matrix32DecomposeToComponents(const Matrix32& m, bool* invertible) {
+bool Matrix32DecomposeToTransform2D(const Matrix32& m, Transform2D* transform) {
 	float det = DifferenceOfProducts(m.a, m.d, m.b, m.c);
-	if (invertible && !(*invertible = det > std::numeric_limits<float>::epsilon())) {
-		return Matrix32ComponentsMakeZero();
+	if (det <= std::numeric_limits<float>::epsilon()) {
+		*transform = Transform2DMakeZero();
+		return false;
 	}
 	
-	Matrix32Components out;
+	transform->sx = std::sqrtf(m.a * m.a + m.b * m.b);
+	transform->sy = det / transform->sx;
+	transform->shearX = (m.a * m.c + m.b * m.d) / det;
+	transform->shearY = 0;
+	transform->rad = std::atan2(m.b, m.a);
+	transform->tx = m.tx;
+	transform->ty = m.ty;
 	
-	out.sx = std::sqrtf(m.a * m.a + m.b * m.b);
-	out.sy = det / out.sx;
-	out.shear = (m.a * m.c + m.b * m.d) / det;
-	out.rad = std::atan2(m.b, m.a);
-	out.tx = m.tx;
-	out.ty = m.ty;
-	
-	return out;
+	return true;
 }
 
 Matrix32 Matrix32Scale(const Matrix32& m, float s) {

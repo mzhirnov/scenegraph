@@ -2,9 +2,14 @@ cmake_minimum_required(VERSION 3.19)
 
 project(sgapp LANGUAGES CXX)
 
-add_executable(${PROJECT_NAME}
-  main.cpp
-)
+file(GLOB_RECURSE
+  SOURCE_FILES
+    ${PROJECT_SOURCE_DIR}/*.cpp
+    ${PROJECT_SOURCE_DIR}/*.h)
+
+source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SOURCE_FILES})
+
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 include(FetchContent)
 
