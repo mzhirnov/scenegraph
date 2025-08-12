@@ -7,6 +7,7 @@
 #include <scenegraph/utils/BitUtils.h>
 #include <scenegraph/geometry/Matrix4.h>
 #include <scenegraph/components/Transform2DComponent.h>
+#include <scenegraph/render/Vertex.h>
 
 
 #include "shaders/PositionColorTransform.vert.h"
@@ -129,33 +130,13 @@ struct SpriteInstance {
 	float texU, texV, texW, texH;
 };
 
-template <std::size_t Stage = 0>
-struct Position3 {
-	float x, y, z;
-};
-
-template <std::size_t Stage = 0>
-struct Color {
-	uint8_t r, g, b, a;
-};
+using PositionColorVertex = Vertex<Position3<>, Color<>>;
 
 template <typename T>
 constexpr SDL_GPUVertexElementFormat VertexElementFormat = SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
 
 template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Position3<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
 template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Color<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
-
-template <typename... Attr>
-struct Vertex : Attr... {
-	static constexpr uint32_t Size() noexcept { return sizeof(Vertex); }
-	
-	template <typename Callback>
-	constexpr void ForEachAttribute(Callback&& callback) noexcept {
-		(std::invoke(std::forward<Callback>(callback), this, static_cast<Attr*>(this)), ...);
-	}
-};
-
-using PositionColorVertex = Vertex<Position3<>, Color<>>;
 
 extern "C" {
 
