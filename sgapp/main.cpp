@@ -9,10 +9,12 @@
 #include <scenegraph/components/Transform2DComponent.h>
 #include <scenegraph/render/Vertex.h>
 
+#include "Imaging.h"
 
 #include "shaders/PositionColorTransform.vert.h"
 #include "shaders/PullSpriteBatch.vert.h"
 #include "shaders/SolidColor.frag.h"
+#include "shaders/TexturedQuadColor.frag.h"
 
 #include <iostream>
 #include <string>
@@ -121,6 +123,8 @@ static SDL_GPUBuffer* vertexBuffer;
 static SDL_GPUBuffer* spriteDataBuffer;
 static SDL_GPUTransferBuffer* transferBuffer;
 static SDL_GPUTransferBuffer* spriteDataTransferBuffer;
+static SDL_GPUSampler* sampler;
+static SDL_GPUTexture* texture;
 
 struct SpriteInstance {
 	Matrix32 transform;
@@ -265,7 +269,7 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	
 	SDL_Init(SDL_INIT_VIDEO);
 	
-	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE /*| SDL_WINDOW_HIGH_PIXEL_DENSITY*/);
 	if (!window) {
 		SDL_Log("CreateWindow failed: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
@@ -296,6 +300,18 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		return SDL_APP_FAILURE;
 	}
 	
+	SDL_GPUShaderCreateInfo fragmentShaderCreateInfo = {
+		.code = SolidColor_frag_air,
+		.code_size = SolidColor_frag_air_len,
+		.format = SDL_GPU_SHADERFORMAT_METALLIB,
+		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT
+	};
+	SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(device, &fragmentShaderCreateInfo);
+	if (!fragmentShader) {
+		SDL_Log("Failed to create fragment shader!");
+		return SDL_APP_FAILURE;
+	}
+	
 	SDL_GPUShaderCreateInfo spriteVertexShaderCreateInfo = {
 		.code = PullSpriteBatch_vert_air,
 		.code_size = PullSpriteBatch_vert_air_len,
@@ -310,13 +326,14 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		return SDL_APP_FAILURE;
 	}
 
-	SDL_GPUShaderCreateInfo fragmentShaderCreateInfo = {
-		.code = SolidColor_frag_air,
-		.code_size = SolidColor_frag_air_len,
+	SDL_GPUShaderCreateInfo spriteFragmentShaderCreateInfo = {
+		.code = TexturedQuadColor_frag_air,
+		.code_size = TexturedQuadColor_frag_air_len,
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
-		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT
+		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
+		.num_samplers = 1
 	};
-	SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(device, &fragmentShaderCreateInfo);
+	SDL_GPUShader* spriteFragmentShader = SDL_CreateGPUShader(device, &spriteFragmentShaderCreateInfo);
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
@@ -332,7 +349,7 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 			.src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
 			.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 			.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-			.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+			.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA
 		}
 	}};
 	
@@ -377,6 +394,7 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	
 	pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineCreateInfo);
 	if (!pipeline) {
+		SDL_Log("Failed to create line pipeline");
         return SDL_APP_FAILURE;
     }
 	
@@ -387,18 +405,20 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		},
 		.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
 		.vertex_shader = spriteVertexShader,
-		.fragment_shader = fragmentShader
+		.fragment_shader = spriteFragmentShader
 	};
 	
 	spritePipeline = SDL_CreateGPUGraphicsPipeline(device, &spritePipelineCreateInfo);
 	if (!spritePipeline) {
+		SDL_Log("Failed to create sprite pipeline");
         return SDL_APP_FAILURE;
     }
 	
 	// Clean up shader resources
 	SDL_ReleaseGPUShader(device, vertexShader);
-	SDL_ReleaseGPUShader(device, spriteVertexShader);
 	SDL_ReleaseGPUShader(device, fragmentShader);
+	SDL_ReleaseGPUShader(device, spriteVertexShader);
+	SDL_ReleaseGPUShader(device, spriteFragmentShader);
 	
 	// Create the vertex buffer
 	SDL_GPUBufferCreateInfo bufferCreateInfo = {
@@ -425,6 +445,23 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		.size = sizeof(SpriteInstance) * 2048
 	};
 	spriteDataBuffer = SDL_CreateGPUBuffer(device, &spriteBufferCreateInfo);
+	
+	SDL_GPUSamplerCreateInfo samplerCreateInfo = {
+		.min_filter = SDL_GPU_FILTER_LINEAR,
+		.mag_filter = SDL_GPU_FILTER_LINEAR,
+		.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+		.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+		.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+		.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE
+	};
+	sampler = SDL_CreateGPUSampler(device, &samplerCreateInfo);
+	
+	SDL_GPUTextureQOILoader loader(device);
+	texture = loader.LoadFromFile("../assets/textures/checkerboard.qoi");
+	if (!texture) {
+		SDL_Log("Failed to load texture");
+		return SDL_APP_FAILURE;
+	}
 	
 	return SDL_APP_CONTINUE;
 }
@@ -497,7 +534,7 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 				.texture = swapchainTexture,
 				.clear_color = SDL_FColor{ 0.0f, 0.0f, 0.0f, 1.0f },
 				.load_op = SDL_GPU_LOADOP_CLEAR,
-				.store_op = SDL_GPU_STOREOP_STORE,
+				.store_op = SDL_GPU_STOREOP_STORE
 			}};
 			
 			SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(cmdbuf, colorTargetInfos, SDL_arraysize(colorTargetInfos), nullptr);
@@ -523,15 +560,23 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 				dataPtr[i].g = (255 - 5 * i) / 255.0f;
 				dataPtr[i].b = 1.0f;
 				dataPtr[i].a = 1.0f;
+				dataPtr[i].texU = 0;
+				dataPtr[i].texV = 0;
+				dataPtr[i].texW = 1;
+				dataPtr[i].texH = 1;
 			}
-			Transform2D c = {.sx = 32, .sy = 32, /*.rad = SDL_PI_F / 8,*/ .tx = 100, .ty = 100};
+			Transform2D c = {.sx = 128, .sy = 128, /*.rad = SDL_PI_F / 8,*/ .tx = 100, .ty = 100};
 			dataPtr[20].transform = Matrix32MakeWithTransform2D(c);
 			dataPtr[20].pivotX = 0.5f;
 			dataPtr[20].pivotY = 0.5f;
 			dataPtr[20].r = 1.0f;
-			dataPtr[20].g = 0;
-			dataPtr[20].b = 0;
+			dataPtr[20].g = 1.0f;
+			dataPtr[20].b = 1.0f;
 			dataPtr[20].a = 1.0f;
+			dataPtr[20].texU = 0;
+			dataPtr[20].texV = 0;
+			dataPtr[20].texW = 1;
+			dataPtr[20].texH = 1;
 			SDL_UnmapGPUTransferBuffer(device, spriteDataTransferBuffer);
 			
 			// Upload instance data
@@ -557,15 +602,17 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 			SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(cmdbuf, &targetInfo, 1, nullptr);
 			SDL_BindGPUGraphicsPipeline(renderPass, spritePipeline);
 			SDL_BindGPUVertexStorageBuffers(renderPass, 0, &spriteDataBuffer, 1);
-//			SDL_BindGPUFragmentSamplers(
-//				renderPass,
-//				0,
-//				&(SDL_GPUTextureSamplerBinding){
-//					.texture = Texture,
-//					.sampler = Sampler
-//				},
-//				1
-//			);
+			
+			SDL_GPUTextureSamplerBinding textureSamplerBinding = {
+				.texture = texture,
+				.sampler = sampler
+			};
+			SDL_BindGPUFragmentSamplers(
+				renderPass,
+				0,
+				&textureSamplerBinding,
+				1
+			);
 			
 			constexpr uint32_t kVerticesPerSprite = 6;
 			
@@ -580,6 +627,8 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 }
 
 void SDL_AppQuit(void* /*appstate*/, SDL_AppResult /*result*/) {
+	SDL_ReleaseGPUTexture(device, texture);
+	SDL_ReleaseGPUSampler(device, sampler);
 	SDL_ReleaseGPUTransferBuffer(device, transferBuffer);
 	SDL_ReleaseGPUTransferBuffer(device, spriteDataTransferBuffer);
 	SDL_ReleaseGPUBuffer(device, vertexBuffer);
