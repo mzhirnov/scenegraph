@@ -462,6 +462,7 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 		SDL_Log("Failed to load texture");
 		return SDL_APP_FAILURE;
 	}
+	SDL_Log("Loaded %dx%dx%d texture", loader.Width(), loader.Height(), loader.Channels());
 	
 	return SDL_APP_CONTINUE;
 }
@@ -552,31 +553,32 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 			constexpr int kNumSprites = 21;
 			SpriteInstance* dataPtr = static_cast<SpriteInstance*>(SDL_MapGPUTransferBuffer(device, spriteDataTransferBuffer, true));
 			for (int i = 0; i < kNumSprites - 1; i++) {
-				Transform2D c = {.sx = 32, .sy = 32, .shearX = 0.5f, .rad = SDL_PI_F / (kNumSprites - 1) * i, .tx = 100 + i * 50.0f, .ty = 100};
-				dataPtr[i].transform = Matrix32MakeWithTransform2D(c);
-				dataPtr[i].pivotX = 0.5f;
-				dataPtr[i].pivotY = 0.5f;
-				dataPtr[i].r = (255 - 10 * i) / 255.0f;
-				dataPtr[i].g = (255 - 5 * i) / 255.0f;
-				dataPtr[i].b = 1.0f;
-				dataPtr[i].a = 1.0f;
-				dataPtr[i].texU = 0;
-				dataPtr[i].texV = 0;
-				dataPtr[i].texW = 1;
-				dataPtr[i].texH = 1;
+				auto angle = SDL_PI_F / (kNumSprites - 1) * i;
+				dataPtr[i] = {
+					.transform = Matrix32MakeWithTransform2D(
+						{ .sx = 32, .sy = 32, .shearX = 0.5f, .rad = angle, .tx = 100 + i * 50.0f, .ty = 100 }),
+					.pivotX = 0.5f,
+					.pivotY = 0.5f,
+					.r = (255 - 10 * i) / 255.0f,
+					.g = (255 - 5 * i) / 255.0f,
+					.b = 1.0f,
+					.a = 1.0f,
+					.texU = 0.5f / 256,
+					.texV = 0.5f / 256,
+					.texW = 1 - 0.5f / 256,
+					.texH = 1 - 0.5f / 256
+				};
 			}
-			Transform2D c = {.sx = 128, .sy = 128, /*.rad = SDL_PI_F / 8,*/ .tx = 100, .ty = 100};
-			dataPtr[20].transform = Matrix32MakeWithTransform2D(c);
-			dataPtr[20].pivotX = 0.5f;
-			dataPtr[20].pivotY = 0.5f;
-			dataPtr[20].r = 1.0f;
-			dataPtr[20].g = 1.0f;
-			dataPtr[20].b = 1.0f;
-			dataPtr[20].a = 1.0f;
-			dataPtr[20].texU = 0;
-			dataPtr[20].texV = 0;
-			dataPtr[20].texW = 1;
-			dataPtr[20].texH = 1;
+			dataPtr[20] = {
+				.transform = Matrix32MakeWithTransform2D({ .sx = 128, .sy = 128, .tx = 100, .ty = 100 }),
+				.pivotX = 0.5f,
+				.pivotY = 0.5f,
+				.r = 1.0f, 1.0f, 1.0f, 1.0f,
+				.texU = 0.5f / 256,
+				.texV = 0.5f / 256,
+				.texW = 1 - 0.5f / 256,
+				.texH = 1 - 0.5f / 256
+			};
 			SDL_UnmapGPUTransferBuffer(device, spriteDataTransferBuffer);
 			
 			// Upload instance data
@@ -603,16 +605,11 @@ SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
 			SDL_BindGPUGraphicsPipeline(renderPass, spritePipeline);
 			SDL_BindGPUVertexStorageBuffers(renderPass, 0, &spriteDataBuffer, 1);
 			
-			SDL_GPUTextureSamplerBinding textureSamplerBinding = {
+			SDL_GPUTextureSamplerBinding textureSamplerBindings[1] = {{
 				.texture = texture,
 				.sampler = sampler
-			};
-			SDL_BindGPUFragmentSamplers(
-				renderPass,
-				0,
-				&textureSamplerBinding,
-				1
-			);
+			}};
+			SDL_BindGPUFragmentSamplers(renderPass, 0, textureSamplerBindings, SDL_arraysize(textureSamplerBindings));
 			
 			constexpr uint32_t kVerticesPerSprite = 6;
 			

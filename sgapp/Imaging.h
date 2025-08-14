@@ -25,6 +25,13 @@ public:
 	
 	SDL_GPUTexture* LoadFromFile(const char* filename) noexcept;
 	
+	uint32_t Width() const noexcept { return _width; }
+	uint32_t Height() const noexcept { return _height; }
+	uint8_t Channels() const noexcept { return _channels; }
+	
 private:
 	SDL_GPUDevice* _device = nullptr;
+	uint32_t _width = 0;
+	uint32_t _height = 0;
+	uint8_t _channels = 0;
 };

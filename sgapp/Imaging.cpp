@@ -1,7 +1,5 @@
 #include "Imaging.h"
 
-#include <SDL3/SDL.h>
-
 #define QOI_OP_INDEX  0x00 /* 00xxxxxx */
 #define QOI_OP_DIFF   0x40 /* 01xxxxxx */
 #define QOI_OP_LUMA   0x80 /* 10xxxxxx */
@@ -125,79 +123,84 @@ bool QOILoader::EndLoad(uint8_t* pixels, uint32_t size, uint32_t channels) noexc
 	return true;
 }
 
+#include <scenegraph/utils/ScopeGuard.h>
+#include <SDL3/SDL.h>
+
 SDL_GPUTexture* SDL_GPUTextureQOILoader::LoadFromFile(const char* filename) noexcept {
-	size_t size;
-	auto data = SDL_LoadFile(filename, &size);
-	if (!data) {
-		return nullptr;
-	}
+	SDL_GPUTransferBuffer* transferBuffer;
 	
-	uint32_t width, height;
-	uint8_t channels;
+	_width = 0;
+	_height = 0;
+	_channels = 0;
 	
-	if (BeginLoad(static_cast<uint8_t*>(data), static_cast<uint32_t>(size), &width, &height, &channels)) {
-		channels = 4;
-		
-		SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
-			.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-			.size = width * height * channels
-		};
-		auto transferBuffer = SDL_CreateGPUTransferBuffer(_device, &transferBufferCreateInfo);
-		
-		auto pixels = static_cast<uint8_t*>(SDL_MapGPUTransferBuffer(_device, transferBuffer, false));
-		
-		auto ok = EndLoad(pixels, width * height * channels, channels);
-		
-		SDL_UnmapGPUTransferBuffer(_device, transferBuffer);
-		
-		SDL_free(data);
-		
-		if (ok) {
-			SDL_GPUTextureCreateInfo textureCreateInfo = {
-				.type = SDL_GPU_TEXTURETYPE_2D,
-				.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-				.width = width,
-				.height = height,
-				.layer_count_or_depth = 1,
-				.num_levels = 1,
-				.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER
-			};
-			
-			auto texture = SDL_CreateGPUTexture(_device, &textureCreateInfo);
-			if (texture) {
-				SDL_GPUCommandBuffer* cmdbuf = SDL_AcquireGPUCommandBuffer(_device);
-				SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmdbuf);
-				
-				SDL_GPUTextureTransferInfo textureTransferInfo = {
-					.transfer_buffer = transferBuffer,
-					.offset = 0,
-				};
-				SDL_GPUTextureRegion region = {
-					.texture = texture,
-					.w = width,
-					.h = height,
-					.d = 1
-				};
-				SDL_UploadToGPUTexture(
-					copyPass,
-					&textureTransferInfo,
-					&region,
-					false
-				);
-				
-				SDL_EndGPUCopyPass(copyPass);
-				SDL_SubmitGPUCommandBuffer(cmdbuf);
-				
-				SDL_ReleaseGPUTransferBuffer(_device, transferBuffer);
-				
-				return texture;
-			}
-			
+	{
+		size_t size;
+		auto data = SDL_LoadFile(filename, &size);
+		if (!data) {
 			return nullptr;
 		}
 		
+		ON_SCOPE_EXIT(&data) { SDL_free(data); };
+		
+		if (!BeginLoad(static_cast<uint8_t*>(data), static_cast<uint32_t>(size), &_width, &_height, &_channels)) {
+			return nullptr;
+		}
+		
+		_channels = 4;
+		auto length = _width * _height * _channels;
+		
+		SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
+			.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+			.size = length
+		};
+		transferBuffer = SDL_CreateGPUTransferBuffer(_device, &transferBufferCreateInfo);
+		
+		auto pixels = static_cast<uint8_t*>(SDL_MapGPUTransferBuffer(_device, transferBuffer, false));
+		ON_SCOPE_EXIT(&transferBuffer, this) { SDL_UnmapGPUTransferBuffer(_device, transferBuffer); };
+		
+		if (!EndLoad(pixels, length, _channels)) {
+			return nullptr;
+		}
+	}
+
+	SDL_GPUTextureCreateInfo textureCreateInfo = {
+		.type = SDL_GPU_TEXTURETYPE_2D,
+		.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+		.width = _width,
+		.height = _height,
+		.layer_count_or_depth = 1,
+		.num_levels = 1,
+		.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER
+	};
+	auto texture = SDL_CreateGPUTexture(_device, &textureCreateInfo);
+	if (!texture) {
 		return nullptr;
 	}
 	
-	return nullptr;
+	SDL_GPUCommandBuffer* cmdbuf = SDL_AcquireGPUCommandBuffer(_device);
+	SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmdbuf);
+	
+	SDL_GPUTextureTransferInfo textureTransferInfo = {
+		.transfer_buffer = transferBuffer,
+		.offset = 0,
+	};
+	SDL_GPUTextureRegion region = {
+		.texture = texture,
+		.w = _width,
+		.h = _height,
+		.d = 1
+	};
+	SDL_UploadToGPUTexture(
+		copyPass,
+		&textureTransferInfo,
+		&region,
+		false
+	);
+	
+	SDL_EndGPUCopyPass(copyPass);
+	SDL_SubmitGPUCommandBuffer(cmdbuf);
+	
+	SDL_ReleaseGPUTransferBuffer(_device, transferBuffer);
+	
+	return texture;
 }
