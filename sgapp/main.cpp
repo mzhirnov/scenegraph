@@ -5,16 +5,12 @@
 #include <scenegraph/memory/MonotonicAllocator.h>
 #include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/utils/BitUtils.h>
+#include <scenegraph/utils/ScopeGuard.h>
 #include <scenegraph/geometry/Matrix4.h>
 #include <scenegraph/components/Transform2DComponent.h>
 #include <scenegraph/render/Vertex.h>
 
 #include "Imaging.h"
-
-#include "shaders/PositionColorTransform.vert.h"
-#include "shaders/PullSpriteBatch.vert.h"
-#include "shaders/SolidColor.frag.h"
-#include "shaders/TexturedQuadColor.frag.h"
 
 #include <iostream>
 #include <string>
@@ -141,6 +137,21 @@ constexpr SDL_GPUVertexElementFormat VertexElementFormat = SDL_GPU_VERTEXELEMENT
 
 template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Position3<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
 template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Color<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
+
+static SDL_GPUShader* LoadShader(SDL_GPUDevice* device_, SDL_GPUShaderCreateInfo* createInfo, const char* filename) {
+	size_t size;
+	auto data = SDL_LoadFile(filename, &size);
+	if (!data) {
+		return nullptr;
+	}
+	
+	ON_SCOPE_EXIT(&data) { SDL_free(data); };
+	
+	createInfo->code = static_cast<Uint8*>(data);
+	createInfo->code_size = size;
+	
+	return SDL_CreateGPUShader(device_, createInfo);
+}
 
 extern "C" {
 
@@ -288,52 +299,44 @@ SDL_AppResult SDL_AppInit(void** /*appstate*/, int /*argc*/, char* /*argv*/[]) {
 	
 	// Create the shaders
 	SDL_GPUShaderCreateInfo vertexShaderCreateInfo = {
-		.code = PositionColorTransform_vert_air,
-		.code_size = PositionColorTransform_vert_air_len,
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = SDL_GPU_SHADERSTAGE_VERTEX,
 		.num_uniform_buffers = 1
 	};
-	SDL_GPUShader* vertexShader = SDL_CreateGPUShader(device, &vertexShaderCreateInfo);
+	SDL_GPUShader* vertexShader = LoadShader(device, &vertexShaderCreateInfo, "../assets/shaders/PositionColorTransform.vert.air");
 	if (!vertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
 	}
 	
 	SDL_GPUShaderCreateInfo fragmentShaderCreateInfo = {
-		.code = SolidColor_frag_air,
-		.code_size = SolidColor_frag_air_len,
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT
 	};
-	SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(device, &fragmentShaderCreateInfo);
+	SDL_GPUShader* fragmentShader = LoadShader(device, &fragmentShaderCreateInfo, "../assets/shaders/SolidColor.frag.air");
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
 	}
 	
 	SDL_GPUShaderCreateInfo spriteVertexShaderCreateInfo = {
-		.code = PullSpriteBatch_vert_air,
-		.code_size = PullSpriteBatch_vert_air_len,
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = SDL_GPU_SHADERSTAGE_VERTEX,
 		.num_uniform_buffers = 1,
 		.num_storage_buffers = 1
 	};
-	SDL_GPUShader* spriteVertexShader = SDL_CreateGPUShader(device, &spriteVertexShaderCreateInfo);
+	SDL_GPUShader* spriteVertexShader = LoadShader(device, &spriteVertexShaderCreateInfo, "../assets/shaders/PullSpriteBatch.vert.air");
 	if (!spriteVertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
 	}
 
 	SDL_GPUShaderCreateInfo spriteFragmentShaderCreateInfo = {
-		.code = TexturedQuadColor_frag_air,
-		.code_size = TexturedQuadColor_frag_air_len,
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
 		.num_samplers = 1
 	};
-	SDL_GPUShader* spriteFragmentShader = SDL_CreateGPUShader(device, &spriteFragmentShaderCreateInfo);
+	SDL_GPUShader* spriteFragmentShader = LoadShader(device, &spriteFragmentShaderCreateInfo, "../assets/shaders/TexturedQuadColor.frag.air");
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
