@@ -1,8 +1,8 @@
 #include <scenegraph/ApplicationContext.h>
 
 #include <scenegraph/utils/ScopeGuard.h>
-#include <scenegraph/geometry/Matrix4.h>
-#include <scenegraph/geometry/Matrix32.h>
+#include <scenegraph/math/Matrix4.h>
+#include <scenegraph/math/Matrix32.h>
 #include <scenegraph/render/Vertex.h>
 
 #define SDL_MAIN_USE_CALLBACKS 1

@@ -1,7 +1,7 @@
-#include <scenegraph/geometry/Frustum.h>
-#include <scenegraph/geometry/Plane.h>
-#include <scenegraph/geometry/Matrix4.h>
-#include <scenegraph/geometry/Sphere.h>
+#include <scenegraph/math/Frustum.h>
+#include <scenegraph/math/Plane.h>
+#include <scenegraph/math/Matrix4.h>
+#include <scenegraph/math/Sphere.h>
 
 Frustum FrustumMakeWithMatrix(const Matrix4& m) {
 	Frustum out;

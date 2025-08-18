@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/geometry/Plane.h>
+#include <scenegraph/math/Plane.h>
 
 #include <array>
 

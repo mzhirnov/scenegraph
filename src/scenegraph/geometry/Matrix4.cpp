@@ -1,5 +1,5 @@
-#include <scenegraph/geometry/Matrix4.h>
-#include <scenegraph/geometry/Quaternion.h>
+#include <scenegraph/math/Matrix4.h>
+#include <scenegraph/math/Quaternion.h>
 #include <scenegraph/utils/FloatUtils.h>
 
 Matrix4 Matrix4MakeWithQuaternion(const Quaternion& q) {

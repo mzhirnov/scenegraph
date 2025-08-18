@@ -1,2 +1,2 @@
-#include <scenegraph/geometry/Vector4.h>
-#include <scenegraph/geometry/Matrix4.h>
+#include <scenegraph/math/Vector4.h>
+#include <scenegraph/math/Matrix4.h>

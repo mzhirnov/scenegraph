@@ -1,5 +1,5 @@
-#include <scenegraph/geometry/Plane.h>
-#include <scenegraph/geometry/Vector3.h>
+#include <scenegraph/math/Plane.h>
+#include <scenegraph/math/Vector3.h>
 
 void PlaneNormalize(Plane& plane) {
 	constexpr float epsilon = std::numeric_limits<float>::epsilon();

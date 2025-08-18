@@ -1,6 +1,6 @@
-#include <scenegraph/geometry/Vector3.h>
-#include <scenegraph/geometry/Quaternion.h>
-#include <scenegraph/geometry/Matrix4.h>
+#include <scenegraph/math/Vector3.h>
+#include <scenegraph/math/Quaternion.h>
+#include <scenegraph/math/Matrix4.h>
 
 Vector3 Vector3Rotate(Vector3 v, const Quaternion& q) {
 	Quaternion p{v.x, v.y, v.z, 0};

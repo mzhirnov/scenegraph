@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/geometry/Vector3.h>
+#include <scenegraph/math/Vector3.h>
 
 struct Sphere {
 	Vector3 origin;

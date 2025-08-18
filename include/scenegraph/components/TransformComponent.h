@@ -1,7 +1,7 @@
 #pragma once
 
 #include <scenegraph/Component.h>
-#include <scenegraph/geometry/Transform.h>
+#include <scenegraph/math/Transform.h>
 
 class TransformComponent : public ComponentImpl<TransformComponent> {
 public:

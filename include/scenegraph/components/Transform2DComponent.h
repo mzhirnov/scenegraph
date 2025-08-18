@@ -2,8 +2,8 @@
 
 #include <scenegraph/Component.h>
 #include <scenegraph/SceneObject.h>
-#include <scenegraph/geometry/Transform2D.h>
-#include <scenegraph/geometry/Matrix32.h>
+#include <scenegraph/math/Transform2D.h>
+#include <scenegraph/math/Matrix32.h>
 
 class Transform2DComponent final : public ComponentImpl<Transform2DComponent> {
 public:

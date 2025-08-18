@@ -1,5 +1,5 @@
-#include <scenegraph/geometry/Quaternion.h>
-#include <scenegraph/geometry/Matrix4.h>
+#include <scenegraph/math/Quaternion.h>
+#include <scenegraph/math/Matrix4.h>
 
 Quaternion QuaternionMakeRotationAxisAngle(float x, float y, float z, float rad) {
 	float s = x * x + y * y + z * z;

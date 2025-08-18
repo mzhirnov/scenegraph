@@ -1,5 +1,5 @@
-#include <scenegraph/geometry/Vector2.h>
-#include <scenegraph/geometry/Matrix32.h>
+#include <scenegraph/math/Vector2.h>
+#include <scenegraph/math/Matrix32.h>
 
 Vector2 Vector2TransformCoord(Vector2 v, const Matrix32& m) {
 	Vector2 out;

@@ -1,1 +1,1 @@
-#include <scenegraph/geometry/Matrix3.h>
+#include <scenegraph/math/Matrix3.h>

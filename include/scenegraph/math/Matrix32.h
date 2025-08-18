@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scenegraph/geometry/Transform2D.h>
+#include <scenegraph/math/Transform2D.h>
 
 struct Matrix32 {
 	float a, b;

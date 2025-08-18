@@ -1,4 +1,4 @@
-#include <scenegraph/geometry/Matrix32.h>
+#include <scenegraph/math/Matrix32.h>
 #include <scenegraph/utils/FloatUtils.h>
 
 Matrix32 Matrix32MakeRotation(float rad) {
