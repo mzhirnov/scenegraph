@@ -7,8 +7,8 @@
 #include <scenegraph/utils/StaticImpl.h>
 #include <scenegraph/utils/BitUtils.h>
 #include <scenegraph/utils/ScopeGuard.h>
-#include <scenegraph/geometry/Matrix4.h>
-#include <scenegraph/geometry/Matrix32.h>
+#include <scenegraph/math/Matrix4.h>
+#include <scenegraph/math/Matrix32.h>
 #include <scenegraph/components/Transform2DComponent.h>
 #include <scenegraph/render/Vertex.h>
 
