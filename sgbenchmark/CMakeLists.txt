@@ -6,7 +6,7 @@ include(FetchContent)
 
 FetchContent_Declare(
   GBenchmark
-  URL https://github.com/google/benchmark/archive/refs/tags/v1.9.3.tar.gz
+  URL https://github.com/google/benchmark/archive/refs/tags/v1.9.4.tar.gz
   DOWNLOAD_EXTRACT_TIMESTAMP ON
 )
 
@@ -24,6 +24,5 @@ add_executable(${PROJECT_NAME}
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	scenegraph
-	benchmark::benchmark
 	benchmark::benchmark_main
 )

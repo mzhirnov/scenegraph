@@ -1,4 +1,5 @@
 #include <scenegraph/ApplicationContext.h>
+#include <scenegraph/SystemContext.h>
 
 #include <scenegraph/utils/ScopeGuard.h>
 #include <scenegraph/math/Matrix4.h>
@@ -54,25 +55,6 @@ template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementF
 template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Color<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
 
 static SDL_AppResult ExampleInitialize() {
-	SDL_Init(SDL_INIT_VIDEO);
-	
-	window = SDL_CreateWindow("SGapp", 1280, 720, SDL_WINDOW_RESIZABLE /*| SDL_WINDOW_HIGH_PIXEL_DENSITY*/);
-	if (!window) {
-		SDL_Log("CreateWindow failed: %s", SDL_GetError());
-		return SDL_APP_FAILURE;
-	}
-	
-	device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL | SDL_GPU_SHADERFORMAT_METALLIB, true, nullptr);
-	if (!device) {
-		SDL_Log("GPUCreateDevice failed");
-		return SDL_APP_FAILURE;
-	}
-	
-	if (!SDL_ClaimWindowForGPUDevice(device, window)) {
-		SDL_Log("GPUClaimWindow failed");
-		return SDL_APP_FAILURE;
-	}
-	
 	// Create the shaders
 	SDL_GPUShaderCreateInfo vertexShaderCreateInfo = {
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
@@ -182,6 +164,8 @@ static SDL_AppResult ExampleInitialize() {
 			.num_color_targets = SDL_arraysize(targetDescriptions),
 			.color_target_descriptions = targetDescriptions,
 		},
+		//.rasterizer_state
+		//.multisample_.depth_stencil_state.enable_depth_test
 		.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
 		.vertex_shader = spriteVertexShader,
 		.fragment_shader = spriteFragmentShader
@@ -418,6 +402,30 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	
 	*appstate = appCtx;
 	
+	SDL_Init(SDL_INIT_VIDEO);
+	
+	window = SDL_CreateWindow(appCtx->GetApplicationName(), 1280, 720, SDL_WINDOW_RESIZABLE /*| SDL_WINDOW_HIGH_PIXEL_DENSITY*/);
+	if (!window) {
+		SDL_Log("CreateWindow failed: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
+	
+	bool debugMode = false;
+#ifndef NDEBUG
+	debugMode = true;
+#endif
+	
+	device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_METALLIB, debugMode, nullptr);
+	if (!device) {
+		SDL_Log("GPUCreateDevice failed");
+		return SDL_APP_FAILURE;
+	}
+	
+	if (!SDL_ClaimWindowForGPUDevice(device, window)) {
+		SDL_Log("GPUClaimWindow failed");
+		return SDL_APP_FAILURE;
+	}
+	
 	return appCtx->Initialize(argc, argv) ? /*SDL_APP_CONTINUE*/ ExampleInitialize() : SDL_APP_SUCCESS;
 }
 
@@ -436,10 +444,8 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 	return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppIterate(void* appstate) {
-	auto appCtx = static_cast<ApplicationContext*>(appstate);
-	SDL_assert(appCtx != nullptr);
-	return appCtx ? (appCtx->Iterate() ? /*SDL_APP_CONTINUE*/ ExampleIterate() : SDL_APP_SUCCESS) : SDL_APP_FAILURE;
+SDL_AppResult SDL_AppIterate(void* /*appstate*/) {
+	return /*SDL_APP_CONTINUE*/ ExampleIterate();
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult /*result*/) {

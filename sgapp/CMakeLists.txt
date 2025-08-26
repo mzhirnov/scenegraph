@@ -35,5 +35,5 @@ add_executable(${PROJECT_NAME}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-	scenegraph
+	scenegraph_main
 )

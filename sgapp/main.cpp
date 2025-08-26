@@ -1,4 +1,5 @@
 #include <scenegraph/ApplicationContext.h>
+#include <scenegraph/SystemContext.h>
 #include <scenegraph/Scene.h>
 #include <scenegraph/Component.h>
 #include <scenegraph/ComponentFactory.h>
@@ -106,10 +107,6 @@ AutoObject::AutoObject() : _impl(43) { puts("AutoObject()"); }
 AutoObject::~AutoObject() { puts("~AutoObject()"); }
 
 int AutoObject::Value() const { return _impl->i; }
-
-class Application;
-
-static std::unique_ptr<Application> application;
 
 ///
 /// Application context
@@ -274,23 +271,38 @@ public:
 	}
 
 private:
-	virtual bool Initialize(int, char*[]) override {
-		return true;
+	virtual const char* GetApplicationName() override {
+		return "SGapp";
 	}
 	
-	virtual bool Iterate() override {
+	virtual bool Initialize(int, char*[]) override {
+		assert(!_initialized);
+		if (_initialized) {
+			return true;
+		}
+		
+		_initialized = true;
 		return true;
 	}
 	
 	virtual void Finalize() override {
-		application.reset();
+		_instance.reset();
 	}
+	
+public:
+	static Application* GetInstance() noexcept {
+		if (!_instance) {
+			_instance = std::make_unique<Application>();
+		}
+		return _instance.get();
+	}
+	
+private:
+	bool _initialized = false;
+	
+	inline static std::unique_ptr<Application> _instance;
 };
 
 ApplicationContext* GetApplicationContext() {
-	if (!application) {
-		application = std::make_unique<Application>();
-	}
-	
-	return application.get();
+	return Application::GetInstance();
 }
