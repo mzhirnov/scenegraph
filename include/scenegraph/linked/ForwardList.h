@@ -89,8 +89,8 @@ public:
 	constexpr void PushFront(T& node) noexcept { node._next = _head; _head = &node; }
 	constexpr void PushBack(T& node) noexcept { *Tail() = &node; node._next = {}; }
 
-	constexpr void Prepend(ForwardList&& list) noexcept { list.Append(*this); *this = std::move(list); }
-	constexpr void Append(ForwardList&& list) noexcept { *Tail() = std::exchange(list._head, {}); }
+	constexpr void PrependList(ForwardList&& list) noexcept { list.Append(*this); *this = std::move(list); }
+	constexpr void AppendList(ForwardList&& list) noexcept { *Tail() = std::exchange(list._head, {}); }
 
 //	constexpr void Splice(const_iterator pos, ForwardList& other) noexcept {
 //
@@ -125,7 +125,8 @@ public:
 		NodeType* current = _head;
 		while (current) {
 			auto next = current->_next;
-			current->_next = std::exchange(prev, current);
+			current->_next = prev;
+			prev = current;
 			current = next;
 		}
 		_head = prev;
