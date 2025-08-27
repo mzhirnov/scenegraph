@@ -33,8 +33,8 @@ inline Vector2 Vector2Subtract(Vector2 v1, Vector2 v2) { return Vector2 {v1.x - 
 
 inline Vector2 Vector2Lerp(Vector2 v1, Vector2 v2, float s) {
 	return Vector2 {
-		DifferenceOfProducts(v2.x, s, v1.x, s - 1.0f),
-		DifferenceOfProducts(v2.y, s, v1.y, s - 1.0f)
+		Lerp(v1.x, v2.x, s),
+		Lerp(v1.y, v2.y, s)
 	};
 }
 

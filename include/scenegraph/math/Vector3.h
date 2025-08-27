@@ -37,9 +37,9 @@ inline Vector3 Vector3Subtract(Vector3 v1, Vector3 v2) { return Vector3 {v1.x - 
 
 inline Vector3 Vector3Lerp(Vector3 v1, Vector3 v2, float s) {
 	return Vector3 {
-		DifferenceOfProducts(v2.x, s, v1.x, s - 1.0f),
-		DifferenceOfProducts(v2.y, s, v1.y, s - 1.0f),
-		DifferenceOfProducts(v2.z, s, v1.z, s - 1.0f)
+		Lerp(v1.x, v2.x, s),
+		Lerp(v1.y, v2.y, s),
+		Lerp(v1.z, v2.z, s)
 	};
 }
 
