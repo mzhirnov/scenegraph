@@ -47,13 +47,13 @@ struct SpriteInstance {
 	float texU, texV, texW, texH;
 };
 
-using PositionColorVertex = Vertex<Position3<>, Color<>>;
+using PositionColorVertex = Vertex<AttributePosition3<>, AttributeColor<>>;
 
 template <typename T>
 constexpr SDL_GPUVertexElementFormat VertexElementFormat = SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
 
-template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Position3<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<Color<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
+template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<AttributePosition3<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<AttributeColor<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
 
 static SDL_AppResult ExampleInitialize() {
 	// Create the shaders
@@ -125,13 +125,13 @@ static SDL_AppResult ExampleInitialize() {
 	SDL_GPUVertexAttribute vertexAttributes[2];
 	
 	PositionColorVertex{}.ForEachAttribute([&vertexAttributes, i = 0u](auto* v, auto* attr) mutable {
-		using Attr = std::remove_cvref_t<std::remove_pointer_t<decltype(attr)>>;
+		using Attribute = std::remove_cvref_t<std::remove_pointer_t<decltype(attr)>>;
 		
-		static_assert(VertexElementFormat<Attr> != SDL_GPU_VERTEXELEMENTFORMAT_INVALID);
+		static_assert(VertexElementFormat<Attribute> != SDL_GPU_VERTEXELEMENTFORMAT_INVALID);
 		
 		vertexAttributes[i].location = i;
 		vertexAttributes[i].buffer_slot = 0;
-		vertexAttributes[i].format = VertexElementFormat<Attr>;
+		vertexAttributes[i].format = VertexElementFormat<Attribute>;
 		vertexAttributes[i].offset = static_cast<Uint32>(reinterpret_cast<std::byte*>(attr) - reinterpret_cast<std::byte*>(v));
 		
 		i++;
