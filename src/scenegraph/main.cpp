@@ -5,6 +5,7 @@
 #include <scenegraph/math/Matrix4.h>
 #include <scenegraph/math/Matrix32.h>
 #include <scenegraph/render/Vertex.h>
+#include <scenegraph/imaging/Color.h>
 
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
@@ -42,7 +43,7 @@ struct SpriteInstance {
 	Matrix32 transform;
 	float pivotX;
 	float pivotY;
-	float r, g, b, a;
+	FloatColor color;
 	float texU, texV, texW, texH;
 };
 
@@ -313,10 +314,7 @@ static SDL_AppResult ExampleIterate() {
 						{ .sx = 32, .sy = 32, .shearX = 0.5f, .rad = angle, .tx = 100 + i * 50.0f, .ty = 100 }),
 					.pivotX = 0.5f,
 					.pivotY = 0.5f,
-					.r = (255 - 10 * i) / 255.0f,
-					.g = (255 - 5 * i) / 255.0f,
-					.b = 1.0f,
-					.a = 1.0f,
+					.color = { (255 - 10 * i) / 255.0f, (255 - 5 * i) / 255.0f, 1.0f, 1.0f },
 					.texU = 0.5f / 256,
 					.texV = 0.5f / 256,
 					.texW = 1 - 0.5f / 256,
@@ -327,7 +325,7 @@ static SDL_AppResult ExampleIterate() {
 				.transform = Matrix32MakeWithTransform2D({ .sx = 128, .sy = 128, .tx = 100, .ty = 100 }),
 				.pivotX = 0.5f,
 				.pivotY = 0.5f,
-				.r = 1.0f, 1.0f, 1.0f, 1.0f,
+				.color = FloatColorMakeWhite(),
 				.texU = 0.5f / 256,
 				.texV = 0.5f / 256,
 				.texW = 1 - 0.5f / 256,
