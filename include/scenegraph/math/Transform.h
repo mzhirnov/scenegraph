@@ -6,10 +6,5 @@ struct Transform {
 	float tx, ty, tz;
 };
 
-inline Transform TransformMakeZero() {
-	return Transform{};
-}
-
-inline Transform TransformMakeIdentity() {
-	return Transform { .sx = 1, .sy = 1, .sz = 1 };
-}
+constexpr Transform TransformMakeZero() {return {}; }
+constexpr Transform TransformMakeIdentity() { return { .sx = 1, .sy = 1, .sz = 1 }; }

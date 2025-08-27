@@ -7,10 +7,5 @@ struct Transform2D {
 	float tx, ty;
 };
 
-inline Transform2D Transform2DMakeZero() {
-	return Transform2D{};
-}
-
-inline Transform2D Transform2DMakeIdentity() {
-	return Transform2D { .sx = 1, .sy = 1 };
-}
+constexpr Transform2D Transform2DMakeZero() { return {}; }
+constexpr Transform2D Transform2DMakeIdentity() { return { .sx = 1, .sy = 1 }; }

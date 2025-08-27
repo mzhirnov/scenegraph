@@ -8,7 +8,7 @@ struct Matrix32 {
 	float tx, ty;
 };
 
-inline Matrix32 Matrix32MakeZero() {
+constexpr Matrix32 Matrix32MakeZero() {
 	return Matrix32 {
 		0, 0,
 		0, 0,
@@ -16,7 +16,7 @@ inline Matrix32 Matrix32MakeZero() {
 	};
 }
 
-inline Matrix32 Matrix32MakeIdentity() {
+constexpr Matrix32 Matrix32MakeIdentity() {
 	return Matrix32 {
 		1, 0,
 		0, 1,
@@ -24,7 +24,7 @@ inline Matrix32 Matrix32MakeIdentity() {
 	};
 }
 
-inline Matrix32 Matrix32Make(float a, float b, float c, float d, float tx, float ty) {
+constexpr Matrix32 Matrix32Make(float a, float b, float c, float d, float tx, float ty) {
 	return Matrix32 {
 		a, b,
 		c, d,
@@ -32,7 +32,7 @@ inline Matrix32 Matrix32Make(float a, float b, float c, float d, float tx, float
 	};
 }
 
-inline Matrix32 Matrix32MakeScale(float sx, float sy) {
+constexpr Matrix32 Matrix32MakeScale(float sx, float sy) {
 	return Matrix32 {
 		sx, 0,
 		0, sy,
@@ -40,7 +40,7 @@ inline Matrix32 Matrix32MakeScale(float sx, float sy) {
 	};
 }
 
-inline Matrix32 Matrix32MakeXShear(float shear) {
+constexpr Matrix32 Matrix32MakeXShear(float shear) {
 	return Matrix32 {
 		1, -shear,
 		0, 1,
@@ -48,7 +48,7 @@ inline Matrix32 Matrix32MakeXShear(float shear) {
 	};
 }
 
-inline Matrix32 Matrix32MakeYShear(float shear) {
+constexpr Matrix32 Matrix32MakeYShear(float shear) {
 	return Matrix32 {
 		1, 0,
 		-shear, 1,
@@ -56,7 +56,7 @@ inline Matrix32 Matrix32MakeYShear(float shear) {
 	};
 }
 
-inline Matrix32 Matrix32MakeTranslation(float tx, float ty) {
+constexpr Matrix32 Matrix32MakeTranslation(float tx, float ty) {
 	return Matrix32 {
 		1, 0,
 		0, 1,

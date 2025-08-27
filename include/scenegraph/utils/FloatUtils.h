@@ -24,19 +24,19 @@ constexpr bool AlmostEqualFloats(float a, float b, int ulps) {
 	return FloatsDifferenceULPs(a, b) <= ulps;
 }
 
-inline float DifferenceOfProducts(float a, float b, float c, float d) {
+constexpr float DifferenceOfProducts(float a, float b, float c, float d) {
 	float cd = c * d;
 	float err = std::fma(-c, d, cd);
 	float dop = std::fma(a, b, -cd);
 	return dop + err;
 }
 
-inline float Clamp(float v, float min, float max) {
+constexpr float Clamp(float v, float min, float max) {
 	assert(min < max);
 	return v < min ? min : v > max ? max : v;
 }
 
-inline float Lerp(float a, float b, float s) {
+constexpr float Lerp(float a, float b, float s) {
 	assert(s >= 0 && s <= 1);
 	return DifferenceOfProducts(b, s, a, s - 1.0f);
 }

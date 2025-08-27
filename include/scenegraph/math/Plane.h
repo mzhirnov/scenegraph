@@ -7,7 +7,7 @@ struct Plane {
 	float distance;
 };
 
-inline Plane PlaneMake(Vector3 normal, float distance) {
+constexpr Plane PlaneMake(Vector3 normal, float distance) {
 	Plane out;
 	out.normal = normal;
 	out.distance = distance;
