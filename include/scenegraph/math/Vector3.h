@@ -30,12 +30,12 @@ inline Vector3 Vector3Normalize(Vector3 v) {
 		Vector3Scale(v, 1.0f / std::sqrtf(magnitudeSq)) : v;
 }
 
-inline Vector3 Vector3Max(Vector3 v1, Vector3 v2) { return Vector3 { std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z) }; }
-inline Vector3 Vector3Min(Vector3 v1, Vector3 v2) { return Vector3 { std::min(v1.x, v2.x), std::min(v1.y, v2.y), std::min(v1.z, v2.z) }; }
-inline Vector3 Vector3Add(Vector3 v1, Vector3 v2) { return Vector3 {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z}; }
-inline Vector3 Vector3Subtract(Vector3 v1, Vector3 v2) { return Vector3 {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}; }
+inline Vector3 Vector3Max(const Vector3& v1, const Vector3& v2) { return Vector3 { std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z) }; }
+inline Vector3 Vector3Min(const Vector3& v1, const Vector3& v2) { return Vector3 { std::min(v1.x, v2.x), std::min(v1.y, v2.y), std::min(v1.z, v2.z) }; }
+inline Vector3 Vector3Add(const Vector3& v1, const Vector3& v2) { return Vector3 {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z}; }
+inline Vector3 Vector3Subtract(const Vector3& v1, const Vector3& v2) { return Vector3 {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}; }
 
-inline Vector3 Vector3Lerp(Vector3 v1, Vector3 v2, float s) {
+inline Vector3 Vector3Lerp(const Vector3& v1, const Vector3& v2, float s) {
 	return Vector3 {
 		Lerp(v1.x, v2.x, s),
 		Lerp(v1.y, v2.y, s),
@@ -43,7 +43,7 @@ inline Vector3 Vector3Lerp(Vector3 v1, Vector3 v2, float s) {
 	};
 }
 
-inline Vector3 Vector3Cross(Vector3 v1, Vector3 v2) {
+inline Vector3 Vector3Cross(const Vector3& v1, const Vector3& v2) {
 	return Vector3 {
 		DifferenceOfProducts(v1.y, v2.z, v1.z, v2.y),
 		DifferenceOfProducts(v1.z, v2.x, v1.x, v2.z),
@@ -51,14 +51,14 @@ inline Vector3 Vector3Cross(Vector3 v1, Vector3 v2) {
 	};
 }
 
-inline float Vector3Dot(Vector3 v1, Vector3 v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
-inline float Vector3Distance(Vector3 v1, Vector3 v2) { return Vector3Length(Vector3Subtract(v1, v2)); }
+inline float Vector3Dot(const Vector3& v1, const Vector3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+inline float Vector3Distance(const Vector3& v1, const Vector3& v2) { return Vector3Length(Vector3Subtract(v1, v2)); }
 
-Vector3 Vector3Rotate(Vector3 v, const Quaternion& q);
-Vector3 Vector3Rotate(Vector3 v, const Matrix4& m);
-Vector3 Vector3Transform(Vector3 v, const Matrix4& m);
-Vector3 Vector3TransformAndProjectCoord(Vector3 v, const Matrix4& m);
+Vector3 Vector3Rotate(const Vector3& v, const Quaternion& q);
+Vector3 Vector3Rotate(const Vector3& v, const Matrix4& m);
+Vector3 Vector3Transform(const Vector3& v, const Matrix4& m);
+Vector3 Vector3TransformAndProjectCoord(const Vector3& v, const Matrix4& m);
 
-inline Vector3 operator+(Vector3 v1, Vector3 v2) { return Vector3Add(v1, v2); }
-inline Vector3 operator-(Vector3 v1, Vector3 v2) { return Vector3Subtract(v1, v2); }
+inline Vector3 operator+(const Vector3& v1, const Vector3& v2) { return Vector3Add(v1, v2); }
+inline Vector3 operator-(const Vector3& v1, const Vector3& v2) { return Vector3Subtract(v1, v2); }
 inline Vector3 operator*(Vector3 v, float s) { return Vector3Scale(v, s); }
