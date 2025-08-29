@@ -12,6 +12,7 @@
 #include <scenegraph/math/Matrix32.h>
 #include <scenegraph/components/Transform2DComponent.h>
 #include <scenegraph/render/Vertex.h>
+#include <scenegraph/threading/WorkThread.h>
 
 #include <iostream>
 #include <string>
@@ -267,6 +268,36 @@ public:
 			assert(invertible);
 			
 			std::cout << "decompose = " << c.sx << ' ' << c.sy << ' ' << c.shearX << ' ' << c.shearY << ' ' << c.rad << ' ' << c.tx << ' ' << c.ty << '\n';
+		}
+		
+		{
+			struct TaskData {
+				std::string in = "Hello, ";
+				std::string out;
+			} data;
+			
+			PipeTask task = {
+				.callbackIn = +[](void* param) {
+					auto data = static_cast<TaskData*>(param);
+					data->out = data->in + "World!";
+				},
+				.callbackOut = +[](void* param) {
+					auto data = static_cast<TaskData*>(param);
+					std::cout << data->out << '\n';
+				},
+				.param = &data
+			};
+			
+			WorkThread thread;
+			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			thread.Push(&task);
+			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			thread.WaitOne();
+			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			
+			while (thread.TryPop()) {
+				std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			}
 		}
 	}
 
