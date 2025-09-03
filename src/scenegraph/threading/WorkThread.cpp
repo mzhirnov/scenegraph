@@ -55,7 +55,7 @@ void Pipe::WaitWhile(uint32_t tasks) noexcept {
 }
 
 void Pipe::Notify() noexcept {
-	_tasks.fetch_add(1, std::memory_order::relaxed);
+	_tasks.fetch_add(1, std::memory_order::release);
 	_tasks.notify_one();
 	_tasks.fetch_sub(1, std::memory_order::relaxed);
 }
