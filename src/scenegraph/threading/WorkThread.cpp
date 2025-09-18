@@ -1,14 +1,16 @@
 #include <scenegraph/threading/WorkThread.h>
 
 void Pipe::Push(PipeTask* task) noexcept {
-	assert(task != nullptr);
-	assert(task->callbackIn != nullptr);
+	auto tail = task;
+	while (tail->next) {
+		tail = tail->next;
+	}
 	
-	task->next = _incomingHead.load(std::memory_order::relaxed);
-	while (!_incomingHead.compare_exchange_weak(task->next, task, std::memory_order::release, std::memory_order::relaxed))
+	tail->next = _incomingHead.load(std::memory_order::relaxed);
+	while (!_incomingHead.compare_exchange_weak(tail->next, task, std::memory_order::release, std::memory_order::relaxed))
 		;
 	
-	_tasks.fetch_add(1, std::memory_order::relaxed);
+	Notify();
 }
 
 PipeTask* Pipe::Peek() noexcept {
@@ -16,6 +18,7 @@ PipeTask* Pipe::Peek() noexcept {
 		if (!(_outcomingHead = _incomingHead.exchange(nullptr, std::memory_order::relaxed))) {
 			return nullptr;
 		}
+		
 		// Reverse list
 		PipeTask* prev = nullptr;
 		PipeTask* current = _outcomingHead;
@@ -40,42 +43,46 @@ PipeTask* Pipe::TryPop() noexcept {
 	_outcomingHead = _outcomingHead->next;
 	task->next = nullptr;
 	
-	_tasks.fetch_sub(1, std::memory_order::relaxed);
+	if (!_outcomingHead) {
+		_busy.clear(std::memory_order::relaxed);
+	}
 	
 	return task;
 }
 
-PipeTask* Pipe::Pop() noexcept {
-	_tasks.wait(0);
-	return TryPop();
+bool Pipe::Busy() const noexcept {
+	return _busy.test(std::memory_order::relaxed);
 }
 
-void Pipe::WaitWhile(uint32_t tasks) noexcept {
-	_tasks.wait(tasks);
+void Pipe::Wait() noexcept {
+	_busy.wait(false);
 }
 
 void Pipe::Notify() noexcept {
-	_tasks.fetch_add(1, std::memory_order::release);
-	_tasks.notify_one();
-	_tasks.fetch_sub(1, std::memory_order::relaxed);
-}
-
-uint32_t Pipe::Tasks() const noexcept {
-	return _tasks.load(std::memory_order::relaxed);
+	_busy.test_and_set(std::memory_order::relaxed);
+	_busy.notify_one();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
 WorkThread::~WorkThread() {
-	_stop.store(true, std::memory_order::relaxed);
+	_stop.test_and_set(std::memory_order::relaxed);
 	_incoming.Notify();
 	
 	if (_thread.joinable()) {
 		_thread.join();
 	}
+	
+	while (TryPop())
+		;
 }
 
 void WorkThread::Push(PipeTask* task) noexcept {
+	if (!task) {
+		assert(task);
+		return;
+	}
+	
 	_incoming.Push(task);
 }
 
@@ -88,32 +95,28 @@ PipeTask* WorkThread::TryPop() noexcept {
 	return _outcoming.TryPop();
 }
 
-void WorkThread::WaitN(uint32_t n) noexcept {
-	// Wait until there are at most n outcoming tasks
-	for (auto i = _outcoming.Tasks(); i < n; i++) {
-		auto tasks = _incoming.Tasks();
-		if (!tasks) {
-			break;
-		}
-		_incoming.WaitWhile(tasks);
+void WorkThread::WaitOne() noexcept {
+	if (!_outcoming.Busy() && _incoming.Busy()) {
+		_outcoming.Wait();
 	}
 }
 
 void WorkThread::WaitAll() noexcept {
-	// Wait until there are incoming tasks
-	while (auto tasks = _incoming.Tasks()) {
-		_incoming.WaitWhile(tasks);
+	while (_incoming.Busy()) {
+		_outcoming.Wait();
 	}
 }
 
 void WorkThread::ThreadBody() noexcept {
-	while (!_stop.load(std::memory_order::relaxed)) {
-		// Wait until there'll be at least one incoming task
-		_incoming.WaitWhile(0);
+	do {
+		_incoming.Wait();
 		
 		while (auto task = _incoming.Peek()) {
-			task->callbackIn(task->param);
+			if (task->callbackIn) {
+				task->callbackIn(task->param);
+			}
 			_outcoming.Push(_incoming.TryPop());
 		}
 	}
+	while (!_stop.test(std::memory_order::relaxed));
 }

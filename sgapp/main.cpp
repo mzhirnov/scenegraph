@@ -274,30 +274,32 @@ public:
 			struct TaskData {
 				std::string in = "Hello, ";
 				std::string out;
-			} data;
+			} data1, data2;
 			
-			PipeTask task = {
+			PipeTask task1 = {
 				.callbackIn = +[](void* param) {
 					auto data = static_cast<TaskData*>(param);
 					data->out = data->in + "World!";
+					std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 20));
 				},
 				.callbackOut = +[](void* param) {
 					auto data = static_cast<TaskData*>(param);
 					std::cout << data->out << '\n';
 				},
-				.param = &data
+				.param = &data1
 			};
 			
-			WorkThread thread;
-			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
-			thread.Push(&task);
-			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
-			thread.WaitOne();
-			std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			PipeTask task2 = task1;
+			task2.param = &data2;
 			
-			while (thread.TryPop()) {
-				std::cout << thread.TasksIn() << ' ' << thread.TasksOut() << '\n';
+			WorkThread thread;
+			thread.Push(&task1);
+			thread.Push(&task2);
+			thread.WaitOne();
+			puts("---");
+			while (auto task = thread.TryPop()) {
 			}
+			puts("---");
 		}
 	}
 

@@ -11,7 +11,7 @@ struct PipeTask {
 };
 
 ///
-/// Pipe of tasks
+/// Queue of tasks
 ///
 class Pipe {
 public:
@@ -21,21 +21,20 @@ public:
 	
 	PipeTask* Peek() noexcept;
 	PipeTask* TryPop() noexcept;
-	PipeTask* Pop() noexcept;
 	
-	void WaitWhile(uint32_t tasks) noexcept;
+	bool Busy() const noexcept;
+	
+	void Wait() noexcept;
 	void Notify() noexcept;
-	
-	uint32_t Tasks() const noexcept;
 
 private:
 	std::atomic<PipeTask*> _incomingHead = nullptr;
 	PipeTask* _outcomingHead = nullptr;
-	std::atomic<uint32_t> _tasks{0};
+	std::atomic_flag _busy = ATOMIC_FLAG_INIT;
 };
 
 ///
-/// Work thread with tasks queue
+/// Work thread with task queue
 ///
 class WorkThread {
 public:
@@ -46,19 +45,15 @@ public:
 	void Push(PipeTask* task) noexcept;
 	PipeTask* TryPop() noexcept;
 	
-	void WaitOne() noexcept { return WaitN(1); }
-	void WaitN(uint32_t n) noexcept;
+	void WaitOne() noexcept;
 	void WaitAll() noexcept;
-	
-	uint32_t TasksIn() const noexcept { return _incoming.Tasks(); }
-	uint32_t TasksOut() const noexcept { return _outcoming.Tasks(); }
 	
 private:
 	void ThreadBody() noexcept;
 
 private:
-	std::thread _thread{&WorkThread::ThreadBody, this};
 	Pipe _incoming;
 	Pipe _outcoming;
-	std::atomic<bool> _stop{false};
+	std::thread _thread{&WorkThread::ThreadBody, this};
+	std::atomic_flag _stop = ATOMIC_FLAG_INIT;
 };
