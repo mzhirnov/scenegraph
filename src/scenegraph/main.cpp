@@ -47,13 +47,13 @@ struct SpriteInstance {
 	float texU, texV, texW, texH;
 };
 
-using PositionColorVertex = Vertex<AttributePosition3<>, AttributeColor<>>;
+using PositionColorVertex = Vertex<Position3Attribute<>, ColorAttribute<>>;
 
 template <typename T>
-constexpr SDL_GPUVertexElementFormat VertexElementFormat = SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
+constexpr SDL_GPUVertexElementFormat AttributeFormat = SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
 
-template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<AttributePosition3<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-template <std::size_t Stage> constexpr SDL_GPUVertexElementFormat VertexElementFormat<AttributeColor<Stage>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
+template <std::size_t Slot> constexpr SDL_GPUVertexElementFormat AttributeFormat<Position3Attribute<Slot>> = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+template <std::size_t Slot> constexpr SDL_GPUVertexElementFormat AttributeFormat<ColorAttribute<Slot>> = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
 
 static SDL_AppResult ExampleInitialize() {
 	// Create the shaders
@@ -119,19 +119,20 @@ static SDL_AppResult ExampleInitialize() {
 		.slot = 0,
 		.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
 		.instance_step_rate = 0,
-		.pitch = PositionColorVertex::Size()
+		.pitch = PositionColorVertex::Stride
 	}};
 	
-	SDL_GPUVertexAttribute vertexAttributes[2];
+	SDL_GPUVertexAttribute vertexAttributes[PositionColorVertex::AttributesCount];
 	
 	PositionColorVertex{}.ForEachAttribute([&vertexAttributes, i = 0u](auto* v, auto* attr) mutable {
-		using Attribute = std::remove_cvref_t<std::remove_pointer_t<decltype(attr)>>;
+		using Attribute = std::remove_cvref_t<decltype(*attr)>;
 		
-		static_assert(VertexElementFormat<Attribute> != SDL_GPU_VERTEXELEMENTFORMAT_INVALID);
+		static_assert(AttributeSlot<Attribute> != ~0u);
+		static_assert(AttributeFormat<Attribute> != SDL_GPU_VERTEXELEMENTFORMAT_INVALID);
 		
 		vertexAttributes[i].location = i;
-		vertexAttributes[i].buffer_slot = 0;
-		vertexAttributes[i].format = VertexElementFormat<Attribute>;
+		vertexAttributes[i].buffer_slot = AttributeSlot<Attribute>;
+		vertexAttributes[i].format = AttributeFormat<Attribute>;
 		vertexAttributes[i].offset = static_cast<Uint32>(reinterpret_cast<std::byte*>(attr) - reinterpret_cast<std::byte*>(v));
 		
 		i++;
@@ -187,14 +188,14 @@ static SDL_AppResult ExampleInitialize() {
 	// Create the vertex buffer
 	SDL_GPUBufferCreateInfo bufferCreateInfo = {
 		.usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-		.size = PositionColorVertex::Size() * 2048
+		.size = PositionColorVertex::Stride * 2048
 	};
 	vertexBuffer = SDL_CreateGPUBuffer(device, &bufferCreateInfo);
 	
 	// To get data into the vertex buffer, we have to use a transfer buffer
 	SDL_GPUTransferBufferCreateInfo transferBufferCreateInfo = {
 		.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-		.size = PositionColorVertex::Size() * 2048
+		.size = PositionColorVertex::Stride * 2048
 	};
 	transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferBufferCreateInfo);
 	
@@ -280,7 +281,7 @@ static SDL_AppResult ExampleIterate() {
 			SDL_GPUBufferRegion bufferRegion = {
 				.buffer = vertexBuffer,
 				.offset = 0,
-				.size = PositionColorVertex::Size() * 8
+				.size = PositionColorVertex::Stride * 8
 			};
 			SDL_UploadToGPUBuffer(copyPass, &transferBufferLocation, &bufferRegion, true);
 			SDL_EndGPUCopyPass(copyPass);
