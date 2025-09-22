@@ -10,7 +10,7 @@
 ///
 /// Component composes a scene object
 ///
-class Component : public ForwardListNode<>, public SceneEntity {
+class Component : public ForwardListNode<Component>, public SceneEntity {
 public:
 	virtual ~Component() = default;
 	

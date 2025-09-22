@@ -8,9 +8,12 @@
 
 #include <string>
 
-class Node : public ForwardListNode<> {
+class Node : public ForwardListNode<Node> {
 public:
 	explicit Node(std::string_view name) : name{name} {}
+	
+	bool operator<(const Node& other) const noexcept { return name < other.name; }
+	bool operator>(const Node& other) const noexcept { return name > other.name; }
 
 public:
 	std::string name;
@@ -232,6 +235,184 @@ void TestErase3() {
 	}
 }
 
+template <typename List>
+void TestMerge() {
+	List listA, listB;
+	
+	Node a1{"1"};
+	Node a2{"2"};
+	Node a3{"3"};
+	
+	listA.PushFront(a3);
+	listA.PushFront(a2);
+	listA.PushFront(a1);
+	
+	Node b1{"0"};
+	Node b2{"1"};
+	Node b3{"3"};
+	Node b4{"9"};
+	
+	listB.PushFront(b4);
+	listB.PushFront(b3);
+	listB.PushFront(b2);
+	listB.PushFront(b1);
+	
+	listA.Merge(listB);
+	
+	EXPECT_FALSE(listA.Empty());
+	EXPECT_TRUE(listB.Empty());
+	
+	auto it = listA.begin();
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "0");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "2");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "9");
+	++it;
+	ASSERT_TRUE(it == listA.end());
+	
+	listA.Rotate(6);
+	EXPECT_EQ(listA.Front().name, "9");
+	EXPECT_EQ(listA.Back().name, "3");
+}
+
+template <typename List>
+void TestAppend() {
+	List listA, listB;
+	
+	Node a1{"1"};
+	Node a2{"2"};
+	Node a3{"3"};
+	
+	listA.PushFront(a3);
+	listA.PushFront(a2);
+	listA.PushFront(a1);
+	
+	Node b1{"0"};
+	Node b2{"1"};
+	Node b3{"3"};
+	Node b4{"9"};
+	
+	listB.PushFront(b4);
+	listB.PushFront(b3);
+	listB.PushFront(b2);
+	listB.PushFront(b1);
+	
+	listA.AppendList(listB);
+	
+	EXPECT_FALSE(listA.Empty());
+	EXPECT_TRUE(listB.Empty());
+	
+	auto it = listA.begin();
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "2");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "0");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != listA.end());
+	EXPECT_EQ(it->name, "9");
+	++it;
+	ASSERT_TRUE(it == listA.end());
+	
+	listA.Rotate(6);
+	EXPECT_EQ(listA.Front().name, "9");
+}
+
+template <typename List>
+void TestSort() {
+	List list;
+
+	Node n1{"4"};
+	Node n2{"1"};
+	Node n3{"3"};
+	Node n4{"2"};
+	Node n5{"5"};
+
+	list.PushFront(n1);
+	list.PushFront(n2);
+	list.PushFront(n3);
+	list.PushFront(n4);
+	list.PushFront(n5);
+	
+	list.Sort();
+	
+	EXPECT_FALSE(list.Empty());
+	
+	auto it = list.begin();
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "2");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "4");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "5");
+	++it;
+	ASSERT_TRUE(it == list.end());
+	
+	list.Rotate(3);
+	EXPECT_EQ(list.Front().name, "4");
+	
+	list.Sort(std::greater<typename List::value_type>{});
+	
+	EXPECT_FALSE(list.Empty());
+	
+	it = list.begin();
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "5");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "4");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "3");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "2");
+	++it;
+	ASSERT_TRUE(it != list.end());
+	EXPECT_EQ(it->name, "1");
+	++it;
+	ASSERT_TRUE(it == list.end());
+	
+	list.Rotate(3);
+	EXPECT_EQ(list.Front().name, "2");
+}
+
 using List = ForwardList<Node>;
 using CircularList = CircularForwardList<Node>;
 
@@ -244,6 +425,9 @@ TEST(List, Rotate) { TestRotate<List>(); }
 TEST(List, Erase) { TestErase<List>(); }
 TEST(List, Erase2) { TestErase2<List>(); }
 TEST(List, Erase3) { TestErase3<List>(); }
+TEST(List, Append) { TestAppend<List>(); }
+TEST(List, Merge) { TestMerge<List>(); }
+TEST(List, Sort) { TestSort<List>(); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -254,6 +438,9 @@ TEST(CircularList, Rotate) { TestRotate<CircularList>(); }
 TEST(CircularList, Erase) { TestErase<CircularList>(); }
 TEST(CircularList, Erase2) { TestErase2<CircularList>(); }
 TEST(CircularList, Erase3) { TestErase3<CircularList>(); }
+TEST(CircularList, Append) { TestAppend<CircularList>(); }
+TEST(CircularList, Merge) { TestMerge<CircularList>(); }
+TEST(CircularList, Sort) { TestSort<CircularList>(); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
