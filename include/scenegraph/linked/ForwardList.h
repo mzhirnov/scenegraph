@@ -430,8 +430,6 @@ public:
 			other._last->_next = {};
 		}
 		
-		auto last = _last;
-		
 		while (head1 && head2) {
 			if (comp(static_cast<const_reference>(*head1), static_cast<const_reference>(*head2))) {
 				tail->_next = head1;
@@ -442,7 +440,10 @@ public:
 				head2 = head2->_next;
 			}
 			tail = tail->_next;
-			last = !head2 ? _last : other._last;
+			
+			if (!head1) {
+				_last = other._last;
+			}
 		}
 		
 		if (head1) {
@@ -452,7 +453,6 @@ public:
 			tail->_next = head2;
 		}
 		
-		_last = last;
 		// Cycle back
 		_last->_next = dummy._next;
 		
@@ -468,14 +468,18 @@ public:
 		}
 		
 		auto head = _last->_next;
+		auto last = _last;
 		
 		// Break cycle
 		_last->_next = {};
 		
 		head = NodeType::MergeSort(head, std::forward<Compare>(comp));
 		
-		// Find last node
-		for (_last = head->_next; _last->_next; _last = _last->_next) {
+		// Find sorted last node.
+		// Starting from unsorted last (<= N) better then starting from sorted head (N).
+		_last = last;
+		while (_last->_next) {
+			_last = _last->_next;
 		}
 		
 		// Cycle back
