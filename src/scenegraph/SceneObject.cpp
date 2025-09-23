@@ -70,9 +70,6 @@ void SceneObject::RemoveFromParent() noexcept {
 }
 
 Component* SceneObject::AddComponent(std::unique_ptr<Component> component) noexcept {
-	assert(_node);
-	assert(component);
-	
 	if (!_node || !component) {
 		return nullptr;
 	}

@@ -550,12 +550,12 @@ public:
 	constexpr pointer operator->() const noexcept { assert(_currentLast); return static_cast<pointer>((*_currentLast)->_next); }
 
 	constexpr iterator_impl& operator++() noexcept {
-		assert(_currentLast);
-		
-		_currentLast = &(*_currentLast)->_next;
-		if (*_currentLast == *_initialLast) {
-			// This is the end
-			_currentLast = {};
+		if (_currentLast) {
+			_currentLast = &(*_currentLast)->_next;
+			if (*_currentLast == *_initialLast) {
+				// This is the end
+				_currentLast = {};
+			}
 		}
 		return *this;
 	}
@@ -574,19 +574,20 @@ private:
 	constexpr explicit iterator_impl(NodeType** last, NodeType** initialLast) noexcept : _currentLast{last}, _initialLast{initialLast} {}
 
 	constexpr iterator_impl& EraseAndMoveForward() noexcept {
-		assert(_currentLast);
-		if (*_currentLast == (*_currentLast)->_next) {
-			// If single element, it's the _last one, so just clear it
-			*_currentLast = {};
-			_currentLast = {};
-		}
-		else {
-			// Overwrite current with next one
-			(*_currentLast)->_next = (*_currentLast)->_next->_next;
-			if (_currentLast != _initialLast && (*_currentLast)->_next == (*_initialLast)->_next) {
-				// If removed the tail, modify _last
-				*_initialLast = *_currentLast;
+		if (_currentLast) {
+			if (*_currentLast == (*_currentLast)->_next) {
+				// If single element, it's the _last one, so just clear it
+				*_currentLast = {};
 				_currentLast = {};
+			}
+			else {
+				// Overwrite current with next one
+				(*_currentLast)->_next = (*_currentLast)->_next->_next;
+				if (_currentLast != _initialLast && (*_currentLast)->_next == (*_initialLast)->_next) {
+					// If removed the tail, modify _last
+					*_initialLast = *_currentLast;
+					_currentLast = {};
+				}
 			}
 		}
 		return *this;
