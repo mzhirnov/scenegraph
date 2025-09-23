@@ -52,18 +52,26 @@ SceneObject SceneObject::InsertBefore() noexcept {
 
 void SceneObject::RemoveChildAt(int pos) noexcept {
 	if (_node) {
-		_node->RemoveChildNodeAt(pos);
+		if (auto child = _node->GetChildNodeAt(pos)) {
+			SceneObject{child}.RemoveFromParent();
+		}
 	}
 }
 
 void SceneObject::RemoveChildren() noexcept {
 	if (_node) {
+		ComponentMessageParams params;
+		SendMessageInChildren(ComponentMessages::Removed, params);
+		
 		_node->RemoveAllChildNodes();
 	}
 }
 
 void SceneObject::RemoveFromParent() noexcept {
 	if (_node) {
+		ComponentMessageParams params;
+		BroadcastMessage(ComponentMessages::Removed, params);
+		
 		_node->RemoveFromParent();
 		_node = nullptr;
 	}
@@ -226,17 +234,31 @@ void SceneObject::SendMessage(ComponentMessage message, ComponentMessageParams& 
 	_node->components.BroadcastMessage(message, params);
 }
 
-void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
+void SceneObject::SendMessageInParent(ComponentMessage message, ComponentMessageParams& params) noexcept {
 	if (!_node) {
 		return;
 	}
 	
-	params.sceneNode = GetNode();
-	_node->components.BroadcastMessage(message, params);
+	_node->ForEachParentNode(
+		[message, &params](EnumCallOrder, SceneNode* node, bool&) {
+			params.sceneNode = node;
+			node->components.BroadcastMessage(message, params);
+		});
+}
+
+void SceneObject::SendMessageInChildren(ComponentMessage message, ComponentMessageParams& params) noexcept {
+	if (!_node) {
+		return;
+	}
 	
 	_node->ForEachChildNode(EnumDirection::FirstToLast, EnumCallOrder::PreOrder,
 		[message, &params](EnumCallOrder, SceneNode* node, bool&) {
 			params.sceneNode = node;
 			node->components.BroadcastMessage(message, params);
 		});
+}
+
+void SceneObject::BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept {
+	SendMessage(message, params);
+	SendMessageInChildren(message, params);
 }

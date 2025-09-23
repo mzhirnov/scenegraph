@@ -80,7 +80,11 @@ public:
 	
 	// Sends message to own components
 	void SendMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
-	// Sends message to own components and those in all children hierarchy
+	// Sends message to all parent components
+	void SendMessageInParent(ComponentMessage message, ComponentMessageParams& params) noexcept;
+	// Sends message to all children components
+	void SendMessageInChildren(ComponentMessage message, ComponentMessageParams& params) noexcept;
+	// Sends message to own and all children components
 	void BroadcastMessage(ComponentMessage message, ComponentMessageParams& params) noexcept;
 	
 private:
