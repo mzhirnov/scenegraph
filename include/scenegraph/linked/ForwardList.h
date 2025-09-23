@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <iterator>
+#include <functional>
 #include <utility>
 #include <cassert>
 
@@ -56,7 +57,7 @@ private:
 		auto tail = &dummy;
 
 		while (first && second) {
-			if (std::forward<Compare>(comp)(static_cast<const T&>(*first), static_cast<const T&>(*second))) {
+			if (std::invoke(std::forward<Compare>(comp), static_cast<const T&>(*first), static_cast<const T&>(*second))) {
 				tail->_next = first;
 				first = first->_next;
 			}
@@ -415,7 +416,7 @@ public:
 	constexpr void Merge(CircularForwardList& other) noexcept { Merge(other, std::less<value_type>{}); }
 	
 	template <typename Compare>
-	constexpr void Merge(CircularForwardList& other, Compare comp) noexcept {
+	constexpr void Merge(CircularForwardList& other, Compare&& comp) noexcept {
 		NodeType dummy;
 		auto tail = &dummy;
 		
@@ -431,7 +432,7 @@ public:
 		}
 		
 		while (head1 && head2) {
-			if (comp(static_cast<const_reference>(*head1), static_cast<const_reference>(*head2))) {
+			if (std::invoke(std::forward<Compare>(comp), static_cast<const_reference>(*head1), static_cast<const_reference>(*head2))) {
 				tail->_next = head1;
 				head1 = head1->_next;
 			}
