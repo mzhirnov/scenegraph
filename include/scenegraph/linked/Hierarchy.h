@@ -6,14 +6,8 @@
 #include <memory>
 #include <functional>
 
-//	USAGE:
-//
-//	class Node : public Hierarchy<Node> {
-//	};
-//
-
 ///
-///
+/// Hierarchy of nodes
 ///
 template <typename NodeType>
 class Hierarchy {
@@ -22,7 +16,7 @@ public:
 	
 	Hierarchy() noexcept = default;
 	
-	Hierarchy(const Hierarchy&) noexcept = default;
+	Hierarchy(const Hierarchy&) noexcept {}
 	Hierarchy& operator=(const Hierarchy&) noexcept { return *this; }
 	
 	Hierarchy(Hierarchy&&) noexcept;
@@ -46,6 +40,12 @@ public:
 	// void Handler(EnumCallOrder callOrder, NodeType* currentNode, bool& stop)
 	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, EnumCallOrder, NodeType*, bool&>>>
 	bool ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, Handler&& handler) const noexcept;
+	
+	bool ForEachParentNode(EnumCallback callback, void* context) const noexcept;
+	
+	// void Handler(EnumCallOrder callOrder, NodeType* currentNode, bool& stop)
+	template <typename Handler, typename = std::enable_if_t<std::is_invocable_v<Handler, EnumCallOrder, NodeType*, bool&>>>
+	bool ForEachParentNode(Handler&& handler) const noexcept;
 	
 	// M o d i f i c a t i o n
 	
@@ -173,9 +173,8 @@ NodeType* Hierarchy<NodeType>::GetRootNode() const noexcept {
 
 template <typename NodeType>
 NodeType* Hierarchy<NodeType>::GetLeastCommonAncestorNode(NodeType* node) const noexcept {
-	assert(node != nullptr);
-	
 	if (!node) {
+		assert(node != nullptr);
 		return nullptr;
 	}
 	
@@ -208,9 +207,8 @@ NodeType* Hierarchy<NodeType>::GetLeastCommonAncestorNode(NodeType* node) const 
 
 template <typename NodeType>
 bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrder callOrder, EnumCallback callback, void* context) const noexcept {
-	assert(callback != nullptr);
-	
 	if (!callback) {
+		assert(callback != nullptr);
 		return false;
 	}
 	
@@ -293,10 +291,35 @@ bool Hierarchy<NodeType>::ForEachChildNode(EnumDirection direction, EnumCallOrde
 }
 
 template <typename NodeType>
-NodeType* Hierarchy<NodeType>::AppendChildNode(std::unique_ptr<NodeType> child) noexcept {
-	assert(child != nullptr);
+bool Hierarchy<NodeType>::ForEachParentNode(EnumCallback callback, void* context) const noexcept {
+	if (!callback) {
+		assert(callback != nullptr);
+		return false;
+	}
 	
+	bool stop = false;
+	
+	for (auto parent = GetParentNode(); parent && !stop; parent = parent->GetParentNode()) {
+		callback(EnumCallOrder::PreOrder, parent, stop, context);
+	}
+	
+	return stop;
+}
+
+template <typename NodeType>
+template <typename Handler, typename>
+bool Hierarchy<NodeType>::ForEachParentNode(Handler&& handler) const noexcept {
+	return ForEachParentNode(
+		+[](EnumCallOrder callOrder, NodeType* currentNode, bool& stop, void* context) {
+			std::invoke(std::forward<Handler>(*static_cast<Handler*>(context)), callOrder, currentNode, stop);
+		},
+		std::addressof(handler));
+}
+
+template <typename NodeType>
+NodeType* Hierarchy<NodeType>::AppendChildNode(std::unique_ptr<NodeType> child) noexcept {
 	if (!child) {
+		assert(child != nullptr);
 		return nullptr;
 	}
 	
@@ -318,9 +341,8 @@ NodeType* Hierarchy<NodeType>::AppendChildNode(std::unique_ptr<NodeType> child) 
 
 template <typename NodeType>
 NodeType* Hierarchy<NodeType>::PrependChildNode(std::unique_ptr<NodeType> child) noexcept {
-	assert(child != nullptr);
-	
 	if (!child) {
+		assert(child != nullptr);
 		return nullptr;
 	}
 	
@@ -365,22 +387,19 @@ NodeType* Hierarchy<NodeType>::InsertNodeBefore(std::unique_ptr<NodeType> newSib
 
 template <typename NodeType>
 std::unique_ptr<NodeType> Hierarchy<NodeType>::ReplaceChildNode(NodeType* nodeToReplace, std::unique_ptr<NodeType> newNode) noexcept {
-	assert(nodeToReplace != nullptr);
-	assert(newNode != nullptr);
-	
 	if (!nodeToReplace || !newNode) {
+		assert(nodeToReplace != nullptr);
+		assert(newNode != nullptr);
 		return {};
 	}
-	
-	assert(nodeToReplace->_parentNode == static_cast<NodeType*>(this));
 	
 	if (nodeToReplace->_parentNode != static_cast<NodeType*>(this)) {
+		assert(nodeToReplace->_parentNode == static_cast<NodeType*>(this));
 		return {};
 	}
 	
-	assert(newNode->_parentNode == nullptr);
-	
 	if (newNode->_parentNode != nullptr) {
+		assert(newNode->_parentNode == nullptr);
 		newNode = RemoveNode(newNode.get());
 	}
 	
@@ -417,18 +436,15 @@ void Hierarchy<NodeType>::RemoveAllChildNodes() noexcept {
 
 template <typename NodeType>
 NodeType* Hierarchy<NodeType>::InsertNodeAfter(NodeType* node, std::unique_ptr<NodeType> newChild) noexcept {
-	assert(node != nullptr);
-	assert(newChild != nullptr);
-	
 	if (!node || !newChild) {
+		assert(node != nullptr);
+		assert(newChild != nullptr);
 		return nullptr;
 	}
 	
 	auto parent = node->_parentNode;
-	
-	assert(parent != nullptr);
-	
 	if (!parent) {
+		assert(parent != nullptr);
 		return nullptr;
 	}
 
@@ -452,18 +468,15 @@ NodeType* Hierarchy<NodeType>::InsertNodeAfter(NodeType* node, std::unique_ptr<N
 
 template <typename NodeType>
 NodeType* Hierarchy<NodeType>::InsertNodeBefore(NodeType* node, std::unique_ptr<NodeType> newChild) noexcept {
-	assert(node != nullptr);
-	assert(newChild != nullptr);
-	
 	if (!node || !newChild) {
+		assert(node != nullptr);
+		assert(newChild != nullptr);
 		return nullptr;
 	}
 	
 	auto parent = node->_parentNode;
-	
-	assert(parent != nullptr);
-	
 	if (!parent) {
+		assert(parent != nullptr);
 		return nullptr;
 	}
 
@@ -488,17 +501,14 @@ NodeType* Hierarchy<NodeType>::InsertNodeBefore(NodeType* node, std::unique_ptr<
 
 template <typename NodeType>
 std::unique_ptr<NodeType> Hierarchy<NodeType>::RemoveNode(NodeType* nodeToRemove) noexcept {
-	assert(nodeToRemove != nullptr);
-	
 	if (!nodeToRemove) {
+		assert(nodeToRemove != nullptr);
 		return {};
 	}
 	
 	auto parent = nodeToRemove->_parentNode;
-	
-	assert(parent != nullptr);
-	
 	if (!parent) {
+		assert(parent != nullptr);
 		return {};
 	}
 	
