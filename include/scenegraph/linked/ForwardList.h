@@ -68,12 +68,7 @@ private:
 			tail = tail->_next;
 		}
 
-		if (first) {
-			tail->_next = first;
-		}
-		else if (second) {
-			tail->_next = second;
-		}
+		tail->_next = first ? first : second;
 
 		return dummy._next;
 	}
@@ -447,12 +442,7 @@ public:
 			}
 		}
 		
-		if (head1) {
-			tail->_next = head1;
-		}
-		else if (head2) {
-			tail->_next = head2;
-		}
+		tail->_next = head1 ? head1 : head2;
 		
 		// Cycle back
 		_last->_next = dummy._next;
