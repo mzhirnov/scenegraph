@@ -59,7 +59,7 @@ void SystemContext::Finalize() {
 	_instance.reset();
 }
 
-Buffer SystemContext:: CreateBuffer() noexcept {
+Buffer SystemContext::CreateBuffer() noexcept {
 	return Buffer{_device};
 }
 
