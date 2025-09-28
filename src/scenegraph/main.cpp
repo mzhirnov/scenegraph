@@ -61,7 +61,7 @@ static SDL_AppResult ExampleInitialize() {
 		.stage = SDL_GPU_SHADERSTAGE_VERTEX,
 		.num_uniform_buffers = 1
 	};
-	SDL_GPUShader* vertexShader = LoadShader(device, &vertexShaderCreateInfo, "../assets/shaders/PositionColorTransform.vert.air");
+	SDL_GPUShader* vertexShader = LoadShader(device, &vertexShaderCreateInfo, "assets/shaders/PositionColorTransform.vert.air");
 	if (!vertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
@@ -71,7 +71,7 @@ static SDL_AppResult ExampleInitialize() {
 		.format = SDL_GPU_SHADERFORMAT_METALLIB,
 		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT
 	};
-	SDL_GPUShader* fragmentShader = LoadShader(device, &fragmentShaderCreateInfo, "../assets/shaders/SolidColor.frag.air");
+	SDL_GPUShader* fragmentShader = LoadShader(device, &fragmentShaderCreateInfo, "assets/shaders/SolidColor.frag.air");
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
@@ -83,7 +83,7 @@ static SDL_AppResult ExampleInitialize() {
 		.num_uniform_buffers = 1,
 		.num_storage_buffers = 1
 	};
-	SDL_GPUShader* spriteVertexShader = LoadShader(device, &spriteVertexShaderCreateInfo, "../assets/shaders/PullSpriteBatch.vert.air");
+	SDL_GPUShader* spriteVertexShader = LoadShader(device, &spriteVertexShaderCreateInfo, "assets/shaders/PullSpriteBatch.vert.air");
 	if (!spriteVertexShader) {
 		SDL_Log("Failed to create vertex shader!");
 		return SDL_APP_FAILURE;
@@ -94,7 +94,7 @@ static SDL_AppResult ExampleInitialize() {
 		.stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
 		.num_samplers = 1
 	};
-	SDL_GPUShader* spriteFragmentShader = LoadShader(device, &spriteFragmentShaderCreateInfo, "../assets/shaders/TexturedQuadColor.frag.air");
+	SDL_GPUShader* spriteFragmentShader = LoadShader(device, &spriteFragmentShaderCreateInfo, "assets/shaders/TexturedQuadColor.frag.air");
 	if (!fragmentShader) {
 		SDL_Log("Failed to create fragment shader!");
 		return SDL_APP_FAILURE;
@@ -235,7 +235,7 @@ static SDL_AppResult ExampleInitialize() {
 	sampler = SDL_CreateGPUSampler(device, &samplerCreateInfo);
 	
 	SDL_GPUTextureQOILoader loader(device);
-	texture = loader.LoadFromFile("../assets/textures/checkerboard.qoi");
+	texture = loader.LoadFromFile("assets/textures/checkerboard.qoi");
 	if (!texture) {
 		SDL_Log("Failed to load texture");
 		return SDL_APP_FAILURE;
