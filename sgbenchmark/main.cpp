@@ -7,7 +7,7 @@
 
 #include <vector>
 
-class Node : public ForwardListNode<> {
+class Node : public ForwardListNode<Node> {
 public:
 	alignas(16) float buffer[4];
 };
