@@ -62,3 +62,5 @@ Vector3 Vector3TransformAndProjectCoord(const Vector3& v, const Matrix4& m);
 constexpr Vector3 operator+(const Vector3& v1, const Vector3& v2) { return Vector3Add(v1, v2); }
 constexpr Vector3 operator-(const Vector3& v1, const Vector3& v2) { return Vector3Subtract(v1, v2); }
 constexpr Vector3 operator*(Vector3 v, float s) { return Vector3Scale(v, s); }
+constexpr Vector3 operator*(float s, Vector3 v) { return Vector3Scale(v, s); }
+constexpr Vector3 operator/(Vector3 v, float s) { return Vector3Scale(v, 1.0f / s); }

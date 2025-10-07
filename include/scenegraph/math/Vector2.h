@@ -47,3 +47,5 @@ Vector2 Vector2TransformNormal(Vector2 v, const Matrix32& m);
 constexpr Vector2 operator+(Vector2 v1, Vector2 v2) { return Vector2Add(v1, v2); }
 constexpr Vector2 operator-(Vector2 v1, Vector2 v2) { return Vector2Subtract(v1, v2); }
 constexpr Vector2 operator*(Vector2 v, float s) { return Vector2Scale(v, s); }
+constexpr Vector2 operator*(float s, Vector2 v) { return Vector2Scale(v, s); }
+constexpr Vector2 operator/(Vector2 v, float s) { return Vector2Scale(v, 1.0f / s); }
